@@ -1,0 +1,78 @@
+# Secrets and environment. Never commit these.
+.env
+.env.*
+!.env.example
+*.secret
+secrets/
+*.key
+# The cross-impl conformance FIXTURE key is synthetic test data, not a secret: the
+# engine generator mints a throwaway identity purely so the Go reader can prove it
+# opens an engine-sealed export byte-identically. Without this exception the *.key
+# rule silently drops it and TestUnsealExportConformance fails on every clean clone.
+!cmd/downpipe/testdata/sealed-export/identity.key
+*.pem
+*.age
+
+# Conformance fixtures are the exception: the break-glass identity and any other
+# key material under the vector corpus is published test data, not a live secret, so
+# the reader can replay it. Without this negation a plain "git add" would silently
+# drop every new vector's identity.key and the vector would fail only on a clean CI
+# checkout (the dir looks complete locally). The narrow path keeps real keys ignored.
+!internal/format/testdata/vectors/**/*.key
+# The custody fixtures are the same class: a throwaway identity, its wrapped envelope
+# and the Shamir shares over its wrapping key, generated so the offline recombine path
+# is proven byte-compatible with the artefacts the console emits. The *.key rule would
+# silently drop expected-identity.key and the conformance tests would fail only on a
+# clean clone.
+!cmd/downpipe/testdata/custody/**
+# The cross-impl conformance FIXTURE key is synthetic test data, not a secret: the
+# engine generator mints a throwaway identity purely so the Go reader can prove it
+# opens an engine-sealed export byte-identically. Without this exception the *.key
+# rule silently drops it and TestUnsealExportConformance fails on every clean clone.
+!cmd/downpipe/testdata/sealed-export/identity.key
+!internal/format/testdata/vectors/**/*.pem
+!internal/format/testdata/vectors/**/*.age
+
+# Build output
+/dist/
+/build/
+*.exe
+*.test
+
+# Coverage
+coverage.out
+coverage.txt
+/coverage/
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local scratch
+/tmp/
+
+# compiled CLI binary
+/downpipe
+coverage/
+.nyc_output/
+
+# Node deps for the ajv schema validator (scripts/schema-validate); the pinned
+# package-lock.json is committed and `npm ci` restores them in CI.
+node_modules/
+
+# Ignore a node_modules SYMLINK as well as a node_modules directory. The rule above ends in "/",
+# which git matches against directories only, and a linked git worktree can link node_modules at the
+# primary checkout rather than installing a second copy of it. Without this bare line the link
+# shows up as untracked and a stray `git add -A` commits an absolute, machine-local path.
+node_modules

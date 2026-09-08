@@ -1,0 +1,14 @@
+{
+  "name": "downpipe-schema-validate",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Validates the on-disk downpipe/0.1.0 conformance vector manifests against docs/format/schema.json using ajv (SPEC.md section 14).",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "validate": "node validate.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.20.0"
+  }
+}

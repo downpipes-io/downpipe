@@ -1,0 +1,242 @@
+# CI for the downpipe Go reference (format + offline reader/CLI). Independently failing
+# jobs with a single CI Success sentinel for branch protection. Deploys are not part of
+# CI; the CLI is a binary and releases are tag-dispatched in release.yml.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["LICENSE*", ".gitignore"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["LICENSE*", ".gitignore"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.26.6"
+  GOLANGCI_LINT_VERSION: "v2.12.2"
+  GOVULNCHECK_VERSION: "v1.4.0"
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - go: "1.26.6" # patched build/release toolchain
+            gotoolchain: auto
+          - go: "1.26" # MSRV floor declared in go.mod
+            gotoolchain: local
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ matrix.go }}" }
+      - name: gofmt (fail on any unformatted file)
+        if: ${{ !cancelled() }}
+        run: |
+          unformatted="$(gofmt -l .)" || { echo '::error::gofmt exited non-zero'; exit 1; }
+          walked="$(find . -name '*.go' | wc -l | tr -d ' ')"
+          if [ "$walked" -lt 150 ]; then
+            echo "::error::gofmt walked $walked Go file(s), under the expected floor"
+            exit 1
+          fi
+          if [ -n "$unformatted" ]; then
+            echo '::error::run gofmt -s -w'
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
+          echo "gofmt: $walked Go file(s) walked, none unformatted"
+      - name: go vet
+        if: ${{ !cancelled() }}
+        run: go vet ./...
+      - name: go build
+        if: ${{ !cancelled() }}
+        run: go build ./...
+      - name: go test (race, shuffled)
+        if: ${{ !cancelled() }}
+        env:
+          GOTOOLCHAIN: ${{ matrix.gotoolchain }}
+        run: go test -race -shuffle=on ./...
+
+  coverage:
+    name: Coverage (gated)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      - name: go test coverage (race, cross-package)
+        run: go test -race -shuffle=on -coverpkg=./... -coverprofile=coverage.out ./...
+      - name: coverage gate self-test
+        shell: bash
+        run: ./scripts/coverage-gate.sh --self-test
+      - name: coverage gate
+        shell: bash
+        run: ./scripts/coverage-gate.sh coverage.out | tee coverage.txt
+      - name: upload coverage profile
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-profile
+          path: |
+            coverage.out
+            coverage.txt
+          if-no-files-found: error
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      - name: golangci-lint
+        # Built from source with the CI Go toolchain: the prebuilt action binary targets an
+        # older Go than GO_VERSION and refuses to run against it.
+        run: |
+          go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
+          "$(go env GOPATH)/bin/golangci-lint" run ./...
+
+  govulncheck:
+    name: Vulnerabilities
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      - name: govulncheck
+        run: |
+          go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
+          "$(go env GOPATH)/bin/govulncheck" ./...
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: scripts/schema-validate/package-lock.json
+      - name: npm audit (scripts/schema-validate, every tree, any severity)
+        working-directory: scripts/schema-validate
+        run: |
+          npm audit --omit=dev --audit-level=low
+          npm audit --audit-level=low
+
+  fuzz:
+    name: Fuzz (${{ matrix.pkg }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pkg: ./internal/format
+            targets: FuzzCanonJSON FuzzCanonNum FuzzManifest FuzzShard FuzzReaderOpen FuzzRunlogKeyless FuzzRunlogChainAnomaly
+          - pkg: ./internal/restore
+            targets: FuzzD1Transcode FuzzDirTargetKey
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      - name: fuzz classifier self-test
+        run: ./scripts/fuzz-bounded.sh --self-test
+      - name: go test -fuzz (each target, bounded, expiry classified)
+        env:
+          PKG: ${{ matrix.pkg }}
+          TARGETS: ${{ matrix.targets }}
+        # TARGETS is deliberately unquoted: the matrix supplies space-separated fuzz target
+        # names and fuzz-bounded.sh takes each as its own positional argument ("$@").
+        run: |
+          # shellcheck disable=SC2086
+          ./scripts/fuzz-bounded.sh "$PKG" 40s $TARGETS
+
+  schema-validate:
+    name: Schema (ajv vectors)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: scripts/schema-validate/package-lock.json
+      - name: ajv validate vectors against schema.json
+        working-directory: scripts/schema-validate
+        run: |
+          npm ci
+          npm run validate
+
+  vectors-listing:
+    name: Vectors listing (docs match disk)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - name: check enumerated vector names equal the directory listing
+        run: ./scripts/check-vectors-listing.sh
+
+  ci-success:
+    name: CI Success
+    needs: [build-test, coverage, lint, govulncheck, fuzz, schema-validate, vectors-listing]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    if: always()
+    steps:
+      - name: Check required jobs
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          status=0
+          echo "required job results:"
+          for name in $(printf '%s' "$NEEDS_JSON" | jq -r 'keys[]' | sort); do
+            result=$(printf '%s' "$NEEDS_JSON" | jq -r --arg n "$name" '.[$n].result')
+            printf '  %-28s %s\n' "$name" "$result"
+            case "$result" in
+              success) ;;
+              *) echo "::error::required job '$name' reported '$result'"; status=1 ;;
+            esac
+          done
+          if [ "$status" -ne 0 ]; then
+            echo "::error::a required job did not pass"
+            exit 1
+          fi
+          echo "all required jobs accounted for"
