@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/downpipes-io/downpipe/actions/workflows/ci.yml/badge.svg)](https://github.com/downpipes-io/downpipe/actions/workflows/ci.yml)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/downpipes/downpipe?display_name=tag&sort=semver)](https://github.com/downpipes-io/downpipe/releases)
+[![Release](https://img.shields.io/github/v/release/downpipes-io/downpipe?display_name=tag&sort=semver)](https://github.com/downpipes-io/downpipe/releases)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/downpipes-io/downpipe/badge)](https://scorecard.dev/viewer/?uri=github.com/downpipes-io/downpipe)
 
 `downpipe` is the standalone, offline reader for downpipe archives. It verifies
