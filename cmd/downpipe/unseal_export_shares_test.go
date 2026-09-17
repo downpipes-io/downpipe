@@ -29,7 +29,7 @@ import (
 // The test recovers the inner export from three of the four shares and requires it to equal both the
 // expected inner AND the bytes the --identity route recovers from the same sealed file.
 //
-// House style: Australian English, no em dashes, no rule-of-three, no AI attribution.
+// House style: Australian English, no em dashes, no rule-of-three.
 
 const splitFixtureDir = "testdata/sealed-export-split"
 

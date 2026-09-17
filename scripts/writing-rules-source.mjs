@@ -4,7 +4,7 @@
  * Writing-rules linter: em dashes and en dashes, over the whole file.
  *
  * House style binds this workspace: Australian English, no em dashes, no rule-of-three, precise
- * claims, no AI attribution. It was binding here and graded by NOTHING.
+ * claims. It was binding here and graded by NOTHING.
  *
  * THIS REPOSITORY WAS RECORDED AS HAVING ZERO VIOLATIONS AND IT DOES NOT. That reading came from a
  * corpus of .ts/.js/.md files, which matches 114 of this repository's 1,066 tracked files and NONE of

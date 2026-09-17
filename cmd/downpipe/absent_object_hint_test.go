@@ -27,7 +27,7 @@ import (
 // Neither exit code moved. Only the explanation did. These cases are pinned here because both were
 // invisible to the whole test suite while the hint's text was landed and reviewed.
 //
-// House style: Australian English, no em dashes, no rule-of-three, no AI attribution.
+// House style: Australian English, no em dashes, no rule-of-three.
 
 // captureStderr runs fn with os.Stderr redirected and returns what it wrote.
 func captureStderr(t *testing.T, fn func()) string {
