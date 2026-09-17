@@ -43,7 +43,7 @@ import (
 // fails the test naming the position, rather than falling out of a no-match branch and being counted as
 // absent.
 //
-// House style: Australian English, no em dashes, no rule-of-three, no AI attribution.
+// House style: Australian English, no em dashes, no rule-of-three.
 
 // The constructors that hand back a reader holding a live run master.
 var runOpeners = map[string]bool{"Open": true, "StreamOpen": true, "StreamOpenContext": true}

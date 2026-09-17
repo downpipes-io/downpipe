@@ -38,7 +38,7 @@ import (
 // (danglingSegments 1 against the deleted segment, 0 against the flipped byte); the exit
 // status and the printed line now agree with it.
 //
-// House style: Australian English, no em dashes, no rule-of-three, no AI attribution.
+// House style: Australian English, no em dashes, no rule-of-three.
 
 // alteredArchive builds a real archive and flips a byte well inside its single seg object, so
 // the object is present and the same length and fails its authenticated decrypt. It is the

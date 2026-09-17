@@ -84,9 +84,9 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with: { egress-policy: audit }
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version: "${{ matrix.go }}" }
       # Each step below is a separate verdict, so each carries `if: ${{ !cancelled() }}` and the
       # job reports all four rather than stopping at the first. Steps in a job are fail-fast by
@@ -143,9 +143,9 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with: { egress-policy: audit }
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version: "${{ env.GO_VERSION }}" }
       # Statement coverage is GATED per package: internal/crypto at 90%, every other
       # package at 85% (scripts/coverage-gate.sh, which aggregates the profile's statement
@@ -192,7 +192,7 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with: { egress-policy: audit }
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       # THE TRIPWIRE'S OWN FIXTURES, GRADED BEFORE THE CHANGE LANDS RATHER THAN AFTER.
       # Until now the only thing that ran them was the tripwire's own workflow_run job, which
@@ -247,7 +247,7 @@ jobs:
       - name: House style (em dashes and en dashes) against the recorded baseline
         if: ${{ !cancelled() }}
         run: make lint-prose
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version: "${{ env.GO_VERSION }}" }
       - name: golangci-lint (with what it excluded announced)
         # golangci-lint v2 is built from source with the CI Go by scripts/lint-announce.sh, because the
@@ -288,9 +288,9 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with: { egress-policy: audit }
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version: "${{ env.GO_VERSION }}" }
       - name: govulncheck
         run: |
@@ -315,7 +315,7 @@ jobs:
       # JavaScript gate file plus a JSON acknowledgement file to a Go repository to say the same thing
       # would be more machinery than the question has. If this tree ever grows an advisory nothing can
       # close, the right move is to copy that gate here, not to soften this line.
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
           cache: npm
@@ -342,9 +342,9 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with: { egress-policy: audit }
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version: "${{ env.GO_VERSION }}" }
       # Bounded native-fuzz pass over the security-critical untrusted-byte parse/verify
       # paths of the offline reader (the canonical-JSON encoder, the canonical-number
@@ -386,9 +386,9 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with: { egress-policy: audit }
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
           cache: npm
@@ -429,7 +429,7 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with: { egress-policy: audit }
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
       # Confirm the conformance vectors enumerated in docs/format/SPEC.md and
       # docs/format/CONFORMANCE.md exactly equal the directory listing under
@@ -454,7 +454,7 @@ jobs:
       - name: Check required jobs
         # Generic by construction: reads the job's own `needs:` context at run time (toJSON(needs)),
         # so it cannot drift out of sync with that list the way a hand-written require_success call
-        # per job name can. See workflow-transform.mjs (PUBLISH) for why this replaced a bespoke,
+        # per job name can. One shared aggregation step replaced a bespoke,
         # per-repository aggregation script.
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
@@ -467,7 +467,7 @@ jobs:
             printf '  %-28s %s\n' "$name" "$result"
             case "$result" in
               success) ;;
-              skipped) echo "::notice::job '$name' was skipped (an event-gated job; not a cross-repo gate, none of those ship in this export)" ;;
+              skipped) echo "::notice::job '$name' was skipped (an event-gated job that does not run on this event)" ;;
               *) echo "::error::required job '$name' reported '$result'"; status=1 ;;
             esac
           done
