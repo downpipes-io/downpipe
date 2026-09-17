@@ -6,6 +6,6 @@ filippo.io/mldsa/internal/constanttime
 filippo.io/mldsa/internal/fips140
 filippo.io/mldsa/internal/fips140/mldsa
 filippo.io/mldsa/mldsacrypto
-# golang.org/x/crypto v0.56.0
+# golang.org/x/crypto v0.57.0
 ## explicit; go 1.26.0
 golang.org/x/crypto/hkdf

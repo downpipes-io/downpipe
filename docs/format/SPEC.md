@@ -2125,7 +2125,7 @@ change set.
 The rule binds on what was PUBLISHED, not on what was written down. Before the first
 obtainable release there are no stored bytes to protect, and treating the rule as
 though there were is how a format accumulates units for readers nobody holds. The
-`1.x`lineage was retired on that reading: it had no published release,
+`1.x` lineage was retired on that reading: it had no published release,
 no obtainable reader and no writer offered on the update channel, so it left the set
 rather than being carried. `0.1` is the only unit this format has, and the additive
 rule binds on it from the first published release of a reader that implements it.
