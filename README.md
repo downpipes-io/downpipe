@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/downpipes-io/downpipe/actions/workflows/ci.yml/badge.svg)](https://github.com/downpipes-io/downpipe/actions/workflows/ci.yml)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/downpipes/downpipe?display_name=tag&sort=semver)](https://github.com/downpipes-io/downpipe/releases)
+[![Release](https://img.shields.io/github/v/release/downpipes-io/downpipe?display_name=tag&sort=semver)](https://github.com/downpipes-io/downpipe/releases)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/downpipes-io/downpipe/badge)](https://scorecard.dev/viewer/?uri=github.com/downpipes-io/downpipe)
 
 `downpipe` is the standalone, offline reader for downpipe archives. It verifies
@@ -51,8 +51,8 @@ cd downpipe
 go build ./cmd/downpipe
 ```
 
-Or download a prebuilt binary from the [v0.3.0 release](https://github.com/downpipes-io/downpipe/releases/tag/v0.3.0):
-reproducible, SBOM-attested and cosign-signed for linux, darwin and windows (amd64 and arm64).
+Or download a prebuilt binary from the [releases page](https://github.com/downpipes-io/downpipe/releases):
+each tagged release ships binaries that are reproducible, SBOM-attested and cosign-signed for linux, darwin and windows (amd64 and arm64).
 `downpipe version` prints the version a binary was built from (`dev` for `go install` or a plain
 local build, the tag for a release-pipeline build). See [VERIFY.md](VERIFY.md) to check a
 downloaded binary against its checksum and signature before you run it.
@@ -333,6 +333,16 @@ on the toolchain is the gap above rather than a fault in the source. This covers
 the from-source path only. It is not a claim of reproducible or signed builds;
 for verified release binaries (which are reproducible and ship an SBOM) see
 Install above.
+
+## The downpipes family
+
+| Repository | What it is | Licence |
+|------------|-----------|---------|
+| [`engine`](https://github.com/downpipes-io/engine) | The in-account backup Worker: capture, seal, schedule, restore | Elastic 2.0 |
+| [`console`](https://github.com/downpipes-io/console) | The in-account management console; every action in the browser | Elastic 2.0 |
+| `downpipe` (this repo) | The offline Go reader: verify and recover archives with no vendor | MIT |
+
+Docs live at [docs.downpipes.io](https://docs.downpipes.io), and you can mount them in your AI tooling: [use the docs in your agent](https://docs.downpipes.io/reference/connect-docs-to-ai). The product site is [downpipes.io](https://downpipes.io).
 
 ## Docs, support and security
 
