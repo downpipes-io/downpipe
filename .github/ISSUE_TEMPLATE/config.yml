@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/downpipes-io/downpipe/security/policy
+    about: Report a vulnerability privately via SECURITY.md (security@maelstrom.au), never a public issue.
+  - name: Recovery help
+    url: https://github.com/downpipes-io/downpipe/blob/main/docs/RECOVER.md
+    about: Recovering from a bucket and your offline key? Start with the recovery walkthrough.

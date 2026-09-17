@@ -1,0 +1,136 @@
+# Dependency review on pull requests: blocks a PR that introduces a dependency with
+# a known high-or-worse advisory, or a disallowed licence. Runs only on PRs because
+# it diffs the base ref against the head ref.
+#
+# ALSO SKIPPED WHILE THE REPOSITORY IS PRIVATE. The action needs the GitHub dependency graph, which this
+# private repository does not have, so on every pull request it failed before it read a single dependency.
+# Measured: run 30954127859 on pull request #10, a github-actions group bump, red on this check
+# for a reason that had nothing to do with its dependencies.
+#
+# A permanently red security check is worse than an absent one: it teaches the reader that red here means
+# nothing, which is the last lesson a security check should teach, and it makes a pull request that is red
+# for a REAL reason indistinguishable from the standing one.
+#
+# THIS IS A SKIP, NOT A SILENCING, and the two are not the same thing. The `report` job below runs on
+# every pull request with no condition and states plainly that the review did not run and why, so the
+# outcome is a genuine no-result rather than a pass. Nothing about the review's own settings is loosened:
+# fail-on-severity and the licence denial list are untouched, and the day the repository is made public
+# the job starts running again by itself, unchanged, because the dependency graph is on by default for
+# public repositories. Nobody has to remember to remove this. Enabling the dependency graph on the private
+# repository is the other route, and that is an owner setting rather than a default.
+#
+# `engine`, `control-plane` and the docs site carry the same guard, written the same way, and this is
+# copied from them so the repositories cannot drift into different answers to one question.
+#
+# Written as `== false` rather than `!`: on a non-pull_request event github.event.repository can be
+# absent, and `== false` on a null skips, where `!null` would run.
+#
+# House style: Australian English, no em dashes, no rule-of-three, precise claims, no AI attribution.
+name: Dependency Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request' && github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - name: Dependency review
+        uses: actions/dependency-review-action@3b139cfc5fae8b618d3eae3675e383bb1769c019 # v4.5.0
+        with:
+          fail-on-severity: high
+          # The reader is MIT and its dependency tree is permissive; copyleft and
+          # other strong-reciprocal licences are not expected in a vendored Go tree.
+          deny-licenses: AGPL-3.0, GPL-2.0, GPL-3.0, LGPL-3.0
+
+  # THE SKIP MUST NOT READ AS A PASS, which is the whole reason the job above may skip at all.
+  #
+  # A job result takes one of FOUR values: success, failure, cancelled, skipped. Before this job existed
+  # the workflow had exactly one job, so a skip of it would leave the "Dependency Review" check grey, and
+  # a required-check configuration counts a skipped check as satisfied. Turning a permanent red into a
+  # silent grey is not the fix; it is the same defect wearing the other colour.
+  #
+  # This job carries no condition, so it runs on every pull request and is the one place a reader can
+  # look. It permits the review to skip only when the precondition mirrored below from that job's own
+  # `if:`, verbatim and negated, actually holds; a skip the precondition does not explain fails the run.
+  # The mirror drifts in the safe direction: narrow the job's `if:` without updating the mirror and this
+  # job is too strict, so it goes red and loud rather than quiet and green.
+  report:
+    name: Dependency review reported
+    needs: [dependency-review]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    if: always()
+    steps:
+      - name: Say whether the dependency review ran
+        env:
+          R_DEPENDENCY_REVIEW: ${{ needs.dependency-review.result }}
+          # Mirrors the `if:` on the `dependency-review` job above, verbatim and negated.
+          DEPENDENCY_REVIEW_MAY_SKIP: ${{ !(github.event_name == 'pull_request' && github.event.repository.private == false) }}
+          # Read only to catch a job added to `needs` that nobody thought to check below.
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+
+          status=0
+          CHECKED=()
+
+          report() { printf '  %-20s %s\n' "$1" "${2:-<no result>}"; }
+
+          # $3 is the mirrored precondition, $4 is what it says in words.
+          require_success_or_documented_skip() {
+            CHECKED+=("$1"); report "$1" "$2"
+            case "$2" in
+              success) ;;
+              skipped)
+                if [ "$3" = "true" ]; then
+                  echo "::notice::job '$1' did NOT run on this event ($4). No dependency was reviewed here. This is a no-result, not a pass."
+                  {
+                    echo "### Dependency review did not run on this pull request"
+                    echo ""
+                    echo "The action needs the GitHub dependency graph, which this private repository does not have. Nothing was reviewed, so this check asserts nothing about the dependencies in this pull request. It starts running by itself the day the repository is made public."
+                    echo ""
+                    echo "The Go module scanners are unaffected: ci.yml still runs govulncheck on this same pull request, and the gitleaks secret scan runs in its own workflow."
+                  } >> "$GITHUB_STEP_SUMMARY"
+                else
+                  echo "::error::job '$1' was SKIPPED and its documented precondition ($4) did NOT hold, so a security check was lost without anyone being told"
+                  status=1
+                fi ;;
+              *) echo "::error::required job '$1' reported '${2:-<no result>}'"; status=1 ;;
+            esac
+          }
+
+          echo "job results:"
+          require_success_or_documented_skip dependency-review "$R_DEPENDENCY_REVIEW" \
+            "$DEPENDENCY_REVIEW_MAY_SKIP" "a private repository, which has no dependency graph"
+
+          # A job added to `needs` but never checked above would be exactly this defect one level up.
+          declared=$(printf '%s' "$NEEDS_JSON" | jq -r 'keys[]' | sort)
+          checked=$(printf '%s\n' "${CHECKED[@]}" | sort)
+          if [ "$declared" != "$checked" ]; then
+            echo "::error::the needs list and the checked list have drifted apart, so at least one job is unchecked"
+            echo "needs:   $(printf '%s' "$declared" | tr '\n' ' ')"
+            echo "checked: $(printf '%s' "$checked" | tr '\n' ' ')"
+            status=1
+          fi
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::this workflow cannot report on the dependency review"
+            exit 1
+          fi
+          echo "the dependency review ran, or skipped only where this check permits and says so"

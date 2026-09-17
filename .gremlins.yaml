@@ -1,0 +1,51 @@
+# gremlins mutation-testing configuration for the offline reader.
+#
+# The native fuzzers (internal/format/fuzz_test.go) plus the roundtrip and
+# constant-time tests already satisfy the property-testing obligation, so the only
+# genuinely-absent testing layer is mutation testing: does the suite actually catch a
+# changed conditional or a flipped operator in the security-critical packages?
+#
+# This file CONFIGURES gremlins; it is not run in CI yet because a full mutation run is
+# slow (it recompiles and re-tests once per mutant). The deferred follow-up is to run
+# `make mutation` and raise the crypto mutation score to 80%+, then wire a gated CI job.
+#
+# Run locally with:
+#   go install github.com/go-gremlins/gremlins/cmd/gremlins@latest
+#   make mutation
+#
+# Scope is the two security-critical packages only (crypto + the format parse/verify
+# path); the wider CLI and provisioning code is out of scope for the first pass.
+
+unleash:
+  dry-run: false
+  output: ""
+  tags: ""
+
+# Only mutate the security-critical packages. gremlins discovers packages from the
+# working directory, so the make target restricts the run to these paths.
+mutant-types:
+  conditionals-boundary:
+    enabled: true
+  conditionals-negation:
+    enabled: true
+  increment-decrement:
+    enabled: true
+  invert-negatives:
+    enabled: true
+  arithmetic-base:
+    enabled: true
+  invert-loopctrl:
+    enabled: true
+  invert-logical:
+    enabled: true
+  remove-self-assignments:
+    enabled: true
+
+# A test that takes too long against a mutant is treated as killed-by-timeout. Keep this
+# generous because the race detector is not used in the mutation run.
+timeout-coefficient: 3
+
+# The threshold the deferred follow-up will enforce. Left here as the documented target;
+# it is not applied until `make mutation` is wired into a gated CI job.
+threshold-efficacy: 0
+threshold-mcover: 0

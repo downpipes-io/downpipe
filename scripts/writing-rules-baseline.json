@@ -1,0 +1,90 @@
+{
+  "$schema_note": "Recorded house-style debt. counts are EXACT: more fails as a regression, fewer fails as an unbanked cleanup, and an entry whose file or rule is gone fails as dangling. See the header of scripts/writing-rules-source.mjs.",
+  "generated_against": "44 hit(s) across 14 file(s) of 356 scanned",
+  "entries": {
+    "cmd/downpipe/attest.go": {
+      "counts": {
+        "em-dash": 1
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "cmd/downpipe/main.go": {
+      "counts": {
+        "em-dash": 2
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "cmd/downpipe/restore_report_test.go": {
+      "counts": {
+        "em-dash": 2
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/crypto/capsule.go": {
+      "counts": {
+        "em-dash": 2
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/format/attest_test.go": {
+      "counts": {
+        "em-dash": 6
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/format/canonnum.go": {
+      "counts": {
+        "em-dash": 2
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/format/canonnum_test.go": {
+      "counts": {
+        "em-dash": 1
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/format/conformance_attest_test.go": {
+      "counts": {
+        "em-dash": 8
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/format/conformance_test.go": {
+      "counts": {
+        "em-dash": 2
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/format/freshness_test.go": {
+      "counts": {
+        "em-dash": 3
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/format/verify.go": {
+      "counts": {
+        "em-dash": 2
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/restore/integrity_exit_test.go": {
+      "counts": {
+        "em-dash": 3
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/restore/marker_test.go": {
+      "counts": {
+        "em-dash": 9
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    },
+    "internal/restore/restore.go": {
+      "counts": {
+        "em-dash": 1
+      },
+      "why": "Pre-existing when this repository's first house-style gate landed. Debt to rewrite, not an exemption."
+    }
+  }
+}

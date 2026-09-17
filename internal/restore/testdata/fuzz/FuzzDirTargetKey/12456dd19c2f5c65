@@ -1,0 +1,2 @@
+go test fuzz v1
+string("\xba\u038b\x91\xf5\u05cb\x91\xf5\xd7\u05cb\x91\xf5\xce\xce")

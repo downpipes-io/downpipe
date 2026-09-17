@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an improvement to the reader, the CLI or the docs
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: >-
+        What are you trying to do that the tool does not let you do today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed change
+      description: >-
+        What you would like to see. If it touches the on-disk archive format,
+        note that the format is frozen at `downpipe/0.1.0` (see
+        `docs/format/SPEC.md`): a byte-level change is a new format major
+        version, not a patch.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else
+    validations:
+      required: false

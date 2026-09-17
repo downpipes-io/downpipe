@@ -1,0 +1,85 @@
+# GoReleaser config for the open-core downpipe CLI: reproducible multi-platform
+# binaries, a checksums file, a CycloneDX SBOM, and keyless artifact attestation.
+# Releases are dispatch-only (tag-driven via .github/workflows/release.yml); a
+# plain `go build` is unaffected and leaves main.version = "dev".
+version: 2
+
+project_name: downpipe
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+builds:
+  - id: downpipe
+    main: ./cmd/downpipe
+    binary: downpipe
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      # Inject the release version into main.version (cmd/downpipe/main.go). Only
+      # main.version exists today; commit/date are recorded in the release notes.
+      - -s -w -X main.version={{ .Version }}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    mod_timestamp: "{{ .CommitTimestamp }}" # reproducible builds
+
+archives:
+  - id: downpipe
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - SECURITY.md
+      - CHANGELOG.md
+      - docs/RECOVER.md
+      - docs/format/SPEC.md
+      - docs/format/CONFORMANCE.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+# CycloneDX SBOM per archive (uses the same cyclonedx-gomod the repo's
+# scripts/generate-sbom.sh pins; install it in the release workflow).
+sboms:
+  - id: archive
+    artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.cdx.json"
+    cmd: cyclonedx-gomod
+    args: ["app", "-licenses", "-json", "-output", "$document", "-main", "cmd/downpipe", "../"]
+
+# Keyless attestation of the checksums file via the OIDC identity of the release
+# workflow (no long-lived key held; verify with the cosign instructions in the
+# release notes). Requires id-token: write in the workflow (set below).
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    certificate: "${artifact}.pem"
+    output: true
+    args:
+      - sign-blob
+      - "--output-certificate=${certificate}"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+      - --yes
+
+release:
+  draft: true # the maintainer reviews and publishes
+  prerelease: auto
+  footer: |
+    Verify a download: check the binary's SHA-256 against `checksums.txt`, and
+    verify `checksums.txt` with `cosign verify-blob` using the certificate and
+    signature attached to the release (the identity is this repo's release
+    workflow). The recovery/reader path makes no network call.
+
+changelog:
+  use: github
+  sort: asc

@@ -1,0 +1,3 @@
+downpipe-wrapping-key-v1
+KEEP OFFLINE AND APART FROM THE CIPHERTEXT. Anyone with both can decrypt the key file.
+key _TT6R8PYp9VrRBw4U8Nn1qmQaP1LFH7pOGh1Y3rpzjM

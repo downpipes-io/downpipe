@@ -1,0 +1,11 @@
+#!/bin/sh
+# Repo-tracked hook, wired up via `make hooks` (sets core.hooksPath to this
+# directory). Reject a commit message carrying automated-tool attribution: a
+# co-authorship trailer, a "generated with/by" note, a sign-off trailer that
+# names a bot rather than a person, or a line describing the commit as the
+# output of a code assistant. Every commit message should read as the work
+# it is, with no note of what wrote it.
+if grep -iEq '^co-authored-by:|generated (with|by)\b|^signed-off-by:.*(\[bot\]|\bbot\b|\bassistant\b|\bai\b)|\b(ai|code|language[- ]model)[- ]assistant\b|\bwritten by (an? )?(ai|bot|assistant)\b|🤖' "$1"; then
+  echo "commit-msg hook: automated-tool attribution in the message; rewrite it" >&2
+  exit 1
+fi

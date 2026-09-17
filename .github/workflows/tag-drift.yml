@@ -1,0 +1,64 @@
+# Fails when the newest git tag no longer has the same CLI command set as origin/main,
+# which is exactly the failure this workflow exists to catch: `go install
+# .../downpipe@latest` resolves to the newest TAG, not to main, so a command added to
+# main and never tagged is silently missing from every install-by-module-path.
+#
+# History: the v0.1.1 tag was the only tag in this repository for four
+# weeks while main moved 51 commits ahead of it and gained `prune`, `recombine` and
+# `unseal-export`. Nothing here ran, so nothing caught it; v0.2.0 closed the gap by
+# hand. This workflow exists so the next gap is caught by CI, not by a manual audit.
+name: Tag drift
+
+on:
+  push:
+    branches: [main]
+    paths: ["cmd/downpipe/main.go"]
+  schedule:
+    - cron: "37 4 * * 1" # weekly, Mondays 04:37 UTC, so a stale tag surfaces even with no push
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tag-drift:
+    name: Latest tag vs main command set
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { fetch-depth: 0, persist-credentials: false }
+
+      - name: Compare the newest tag's command set against main
+        run: |
+          set -euo pipefail
+
+          TAG=$(git tag --list 'v*' --sort=-creatordate | head -1)
+          if [ -z "${TAG}" ]; then
+            echo "::error::No v* tag exists at all, so 'go install .../downpipe@latest' has nothing to resolve to. That is a real gap, not a pass."
+            exit 1
+          fi
+
+          # The command set a working `main.go` dispatches on: one `case "name":` line per
+          # subcommand. Same extraction applied to both trees so the comparison is apples to
+          # apples even if the switch statement's formatting has moved.
+          extract() { grep -oE 'case "[a-zA-Z-]+":' | sed -E 's/case "(.+)":/\1/' | sort -u; }
+
+          TAG_CMDS=$(git show "${TAG}:cmd/downpipe/main.go" | extract)
+          MAIN_CMDS=$(git show "origin/main:cmd/downpipe/main.go" | extract)
+          MISSING=$(comm -13 <(echo "${TAG_CMDS}") <(echo "${MAIN_CMDS}"))
+          AHEAD=$(git rev-list --count "${TAG}..origin/main")
+
+          echo "Newest tag: ${TAG} (${AHEAD} commits behind origin/main)"
+
+          if [ -n "${MISSING}" ]; then
+            echo "::error::'${TAG}' is missing command(s) that exist on origin/main: $(echo "${MISSING}" | tr '\n' ' '). 'go install .../downpipe@latest' resolves to '${TAG}' and would silently omit them. Cut a new tag that carries them."
+            exit 1
+          fi
+
+          echo "OK: every command on origin/main's cmd/downpipe/main.go exists in ${TAG}."
