@@ -279,6 +279,7 @@ function run({ roots, exts, root, baselinePath, write }) {
   };
 }
 
+/* -------------------------------------------------------------------------- */
 
 function selfTest() {
   const checks = [];
@@ -389,6 +390,7 @@ function selfTest() {
   return { failures: failed, checks: checks.length };
 }
 
+/* -------------------------------------------------------------------------- */
 
 const argv = process.argv.slice(2);
 const bad = unknownFlags(argv);

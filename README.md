@@ -69,7 +69,7 @@ reader that implements their version, and points here. See
 [CHANGELOG.md](CHANGELOG.md), "The retention duty that line does not discharge",
 for what that refusal costs a holder who cannot yet get the right reader.
 
-**Before `v0.2.0`:** a `v0.1.1`tag was cut, before`prune`,
+**Before `v0.2.0`:** a `v0.1.1` tag was cut, before `prune`,
 `recombine` and `unseal-export` existed, so `@latest` silently resolved to an
 incomplete reader for four weeks with nothing to flag it: no error, no gate,
 no warning from the tool itself. `v0.2.0` closes that gap, and the tag is
