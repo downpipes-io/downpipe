@@ -397,7 +397,7 @@ func TestNoRedirectClientRefusesRedirect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusFound {
 		t.Fatalf("status = %d, want %d (the 3xx returned, not followed)", resp.StatusCode, http.StatusFound)
 	}
@@ -411,7 +411,7 @@ func TestNoRedirectClientRefusesRedirect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("control Get: %v", err)
 	}
-	defer ctrl.Body.Close()
+	defer func() { _ = ctrl.Body.Close() }()
 	if !redirected {
 		t.Fatalf("control: a following client should have reached the redirect target")
 	}
