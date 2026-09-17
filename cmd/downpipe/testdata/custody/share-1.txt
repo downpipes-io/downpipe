@@ -1,0 +1,9 @@
+downpipe-shamir-share-v1
+# Custodian 1 of 4. Any 3 of the 4 shares reconstruct the wrapping key.
+# One share alone reveals nothing. Keep it apart from the ciphertext and the other shares.
+index 1
+n 4
+threshold 3
+# checksum is a PUBLIC one-way check of the wrapping key, to detect a wrong share at recovery.
+checksum DWlz8Q
+share Ab9cBeZA_ZeQbZ53AljS2R_E7pFBC75mtEqdFahvChJ3

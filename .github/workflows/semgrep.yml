@@ -1,0 +1,111 @@
+# Static analysis (SAST) with Semgrep, advisory. It surfaces findings on every push
+# and pull request to main and does NOT block merge (the `|| true` keeps it green).
+# Promote it to a hard gate by removing `|| true` and adding it to the ci-success
+# needs list once the baseline is triaged (deferred follow-up). Pin the semgrep
+# version for reproducibility.
+name: Semgrep
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 6 * * 1" # weekly, Mondays 06:23 UTC, so findings surface even without a push
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: Semgrep SAST (advisory)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write # upload the SARIF to code scanning
+      # `actions: read` is required by upload-sarif on a PRIVATE repository, and its absence is what
+      # produced the exact annotation text this job used to carry every run, "Resource not accessible
+      # by integration", pointing at the get-a-workflow-run endpoint. That message was read here as
+      # proof that Advanced Security was missing; it was not, it was this permission. Measured against
+      # docs, whose trivy and semgrep jobs already carry `actions: read` and therefore reach the real
+      # answer, "Code Security must be enabled for this repository to use code scanning". Both roads
+      # end at the same place today, because code scanning is off either way, so this line changes
+      # nothing now. It is here so that the day the upload is meant to work it is not stopped by a
+      # permission nobody remembered.
+      actions: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - name: Semgrep scan (rules p/default + p/secrets)
+        # Advisory: `|| true` keeps the job green until the baseline is triaged. The
+        # SARIF is uploaded below so findings are visible in code scanning regardless.
+        run: |
+          pipx install semgrep
+          semgrep scan --config p/default --config p/secrets --metrics off --sarif --output semgrep.sarif || true
+      # WHY THIS UPLOAD IS SKIPPED RATHER THAN ALLOWED TO FAIL.
+      #
+      # `GET /repos/downpipes/downpipe` reports `security_and_analysis.code_security.status` as
+      # `disabled`, and so does every one of the ten repositories in the organisation, so the upload
+      # cannot succeed here and `continue-on-error` was keeping the job green over it.
+      #
+      # That was not a quiet arrangement, which is the part the note here had wrong. A step held green
+      # by `continue-on-error` STILL emits a failure-level annotation, so every successful Semgrep run
+      # on main carried one. Read from run 31250264012 on main at a5c56d5d, run conclusion success, job
+      # conclusion success, annotation level failure, via
+      # `GET /repos/downpipes/downpipe/check-runs/{job_id}/annotations`. It was measured separately that
+      # a step failing under `continue-on-error` annotates at failure level even with no error command
+      # of its own, and that a step held back by an `if:` annotates nothing at all. A green run that
+      # always shows a red annotation teaches a reader that annotations here mean nothing, which is the
+      # same lesson a permanently red check teaches.
+      #
+      # The precondition is the repository's own visibility, so it is written as the visibility test
+      # that decides it, which is the construct `scorecard.yml` already uses to guard its own
+      # upload-sarif and `dependency-review.yml` uses to guard itself. Advanced Security is included
+      # once a repository is public, so this starts running again by itself the day that changes, with
+      # nothing to edit here. Enabling Advanced Security on the private repository is the other route,
+      # and that is an owner setting rather than a default; taking it would mean widening this
+      # condition.
+      #
+      # `continue-on-error` goes with the same edit, and that half is what keeps this honest rather
+      # than merely quiet. A skipped step reports nothing, so the only runs on which this step can now
+      # fail are runs where it was expected to work, and on those the job goes red and says so.
+      #
+      # Written as `== false` rather than `!`: on an event whose payload carries no repository object
+      # the expression is null, and `== false` skips where `!null` would run.
+      - name: Upload SARIF (only where code scanning can accept it)
+        if: always() && github.event.repository.private == false
+        uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      # The skip must not be silent. Perversely, the failure-level annotation was until now the only
+      # thing in a run that said the Security tab had received nothing, so removing it without putting
+      # something in its place would leave a reader with no way to tell an empty Security tab from a
+      # clean one. This says which of the two happened, at notice level, in the log and the summary.
+      #
+      # It also names where the findings ARE, which matters more here than in the sibling repositories:
+      # this workflow has no artefact fallback, so with the Security tab unavailable the SARIF dies with
+      # the runner and the semgrep step's own log output is the only record of the scan.
+      - name: State where the SARIF went
+        if: always()
+        env:
+          IS_PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          set -euo pipefail
+          if [ "${IS_PRIVATE}" = "false" ]; then
+            msg="SARIF was uploaded to the Security tab."
+          else
+            msg="SARIF was NOT uploaded to the Security tab: code scanning ingest needs Advanced Security, which this private repository does not have. This workflow keeps no SARIF artefact, so the scan step's log above is the only record of what was found."
+            echo "::notice::${msg}"
+          fi
+          { echo "### SARIF destination"; echo ""; echo "${msg}"; } >> "$GITHUB_STEP_SUMMARY"

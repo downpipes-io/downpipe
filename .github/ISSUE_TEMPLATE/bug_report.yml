@@ -1,0 +1,59 @@
+name: Bug report
+description: A reproducible problem in the reader, the CLI or the library
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not report a vulnerability here.** Security issues go to
+        security@maelstrom.au (see [SECURITY.md](../../SECURITY.md)), never a
+        public issue.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear description of the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: >-
+        The exact `downpipe` command line (redact any key paths or bucket
+        names) and the steps that lead to the problem.
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: Expected vs actual
+      description: Include the exit code and any stderr for the actual result.
+      value: |
+        - Expected:
+        - Actual (include the exit code and any stderr):
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      value: |
+        - `downpipe version`:
+        - OS / arch:
+        - Go version (if built from source):
+        - Archive source: local directory / S3-compatible bucket (which provider)
+    validations:
+      required: true
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else
+      description: >-
+        Was the archive produced by the engine, or another writer? Does
+        `downpipe inspect` succeed on it?
+    validations:
+      required: false

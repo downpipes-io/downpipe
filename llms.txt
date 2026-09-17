@@ -1,0 +1,44 @@
+# downpipe
+
+> downpipe is the offline reference reader for the `downpipe/0.1.0` backup archive format. It is a single static MIT-licensed Go binary that recovers, verifies and attests an archive entirely offline, with no vendor, no network and no account. It is the recover-forever guarantee for the downpipes platform: even if the vendor, the console and the cloud account all vanish, a holder of the two recovery-kit files, the break-glass identity `identity.key` and the operator signer public key `signer.pub`, can still read their data with this tool.
+
+The format itself is `downpipe/0.1.0`, semver'd (while the major is 0 a byte-level rule change bumps the minor and is a new, incompatible identity) and specified byte-for-byte in `docs/format/SPEC.md`. The tool versions independently under 0ver. Confidentiality and integrity are post-quantum hybrid (X25519 + ML-KEM-1024 for key encapsulation, Ed25519 + ML-DSA-87 for signatures), and content is sealed with AES-256-GCM, all CNSA 2.0 aligned.
+
+## Commands
+
+- `downpipe keygen`: generate a break-glass recipient identity and a signer keypair.
+- `downpipe inspect --archive <dir> --run <id>`: show a run's cleartext root manifest, no identity needed. `--run` is required; when the run id is not known, `downpipe keys --which --archive <dir>` lists the runs a source holds.
+- `downpipe keys --which --archive <dir>`: group the runs a source holds by the recipient identity that opens them, no identity needed. With `--fingerprint` and the key files instead, it prints the fingerprints to check against a printed recovery sheet.
+- `downpipe verify --archive <dir> --run <id> --identity <file> --signer <file>`: verify a run end to end against an identity and a signer.
+- `downpipe attest --archive <dir> --run <id>`: keyless integrity check (root signature, shard hashes, RUNLOG) without an identity; `--signer` is optional.
+- `downpipe restore --archive <dir> --run <id> --identity <file> --signer <file> --out <dir>`: plan the writes (dry run by default); pass `--apply` to write. `--signer` is required, as it is for `verify`: `signer.pub` is not in the archive and cannot be rebuilt from it, so it has to come from the recovery kit. `--out` is required for the default `--sink file`. Sinks are `--sink file` (one file per record under `--out`), `--sink env` (dotenv lines), or `--sink discard` (decrypt-and-verify restorability check that writes nothing).
+- `downpipe prune --archive <dir> --identity <file> --signer <file> --keep <n>`: plan, and with `--apply` delete, the runs a retention policy has superseded.
+- `downpipe unseal-export --in <file> --sig <file> --signer <file> --identity <file>`: open a sealed control-plane export offline with a recovery kit.
+- `downpipe recombine --share <file> --share <file> --share <file> --envelope <file>`: rebuild `identity.key` offline from an M-of-N custodian split. A `--share` file is the labelled share download or a file holding the bare share body a custodian received by email; `--wrapping-key <file>` replaces the shares when the whole key was stored. Local files only, no network.
+- `downpipe selftest`: build and recover a sample archive end to end.
+- `downpipe preflight --account <id>`: read-only deploy-time Cloudflare account checks, using your own `CLOUDFLARE_API_TOKEN`. `--account` is required, and `--domain <name>` adds a check that the zone is active on that account.
+- `downpipe setup`: provision Cloudflare from your own machine using your own `CLOUDFLARE_API_TOKEN` (dry run by default; `--apply` to provision).
+- `downpipe init`: print the ordered least-privilege deploy runbook (print only, no live call).
+- `downpipe update`: print the scoped-elevate, deploy, revoke upgrade runbook (print only, no live call).
+- `downpipe version`: print the tool version.
+
+inspect, keys, verify, attest, restore and prune read from a local `--archive <dir>`, from an S3-compatible bucket via `--s3-endpoint`/`--s3-bucket` (credentials from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`), or from an Azure Blob container via `--azure-endpoint`/`--azure-container` (credentials from `AZURE_STORAGE_KEY` or `AZURE_STORAGE_SAS_TOKEN`). Azure Blob is not an S3-compatible store and is not reachable through `--s3-endpoint`, which is why it has its own pair. A destination that cannot be reached exits 11, which is never a verdict about the archive.
+
+## Recovery path
+
+The fastest path to your data: hold both files the key ceremony wrote into your recovery kit, `identity.key` and `signer.pub`, point the tool at the archive, and run `verify` then `restore --apply`. Neither command starts without `--signer`, so a kit holding only `identity.key` cannot recover. The step-by-step recovery guide, including what to do when only the bucket survives, is in `docs/RECOVER.md`.
+
+## Key documents
+
+- [Format specification](docs/format/SPEC.md): the normative `downpipe/0.1.0` wire format. Never renamed.
+- [Recovery guide](docs/RECOVER.md): how to recover an archive offline, start to finish.
+- [Conformance vectors](docs/format/CONFORMANCE.md): the test vector corpus a clean-room re-implementation must pass.
+- [JSON schema](docs/format/schema.json): a machine-readable schema for the manifest structures, secondary to SPEC.md.
+- [README](README.md): build, install and quick-start.
+- [Security policy](SECURITY.md): reporting and disclosure.
+
+## Notes for tools
+
+- The format identifier `downpipe/0.1.0` is exact and MUST NOT be paraphrased; a byte-level rule change ships as `downpipe/0.2.0`, never as an edit to 0.1.0.
+- The binary is offline by design. `inspect`, `verify`, `attest`, `recombine` and `restore` make no call to the vendor and send no telemetry. Pointed at `--archive <dir>` they make no network call at all; pointed at `--s3-endpoint` or `--azure-endpoint` the only host they contact is the destination endpoint you named, which is the same file read over HTTPS.
+- The running platform engine never holds a standing Cloudflare API token; deploy tokens are scoped, short-lived and deleted after use.

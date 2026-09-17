@@ -1,0 +1,62 @@
+# Extended fuzzing: a weekly long-budget run of every fuzz target. The bounded 40s-per-target
+# pass in ci.yml gates every push; this job spends a much larger budget searching for crashers
+# the short pass cannot reach (FuzzReaderOpen was still finding new coverage at its CI cutoff).
+# It is deliberately NOT part of the CI Success sentinel: a failure here is a found bug to
+# triage, not a blocked merge. A surfaced crasher should be committed as a seed under
+# testdata/fuzz so the short CI pass pins it from then on.
+name: Fuzz (extended)
+
+on:
+  schedule:
+    # Weekly, off the hour. Scheduled runs fire from the default branch only. Note GitHub
+    # auto-pauses cron on a repository with no activity for 60 days, so a silent absence of
+    # runs is not evidence of a clean sweep.
+    - cron: "17 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.26.6" # matches ci.yml's patched toolchain
+
+jobs:
+  fuzz-extended:
+    name: Fuzz extended (${{ matrix.pkg }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pkg: ./internal/format
+            targets: FuzzCanonJSON FuzzCanonNum FuzzManifest FuzzShard FuzzReaderOpen FuzzRunlogKeyless FuzzRunlogChainAnomaly
+          - pkg: ./internal/restore
+            targets: FuzzD1Transcode FuzzDirTargetKey
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      - name: fuzz classifier self-test
+        run: ./scripts/fuzz-bounded.sh --self-test
+      # Same classifier as the bounded pass in ci.yml, for the same reason: `-fuzztime <duration>`
+      # expiry races the coordinator's own cancellation and reports a clean stop as a failure with
+      # no crasher. A weekly job that cries wolf is read even less often than a gating one.
+      - name: go test -fuzz (each target, long budget, expiry classified)
+        env:
+          PKG: ${{ matrix.pkg }}
+          TARGETS: ${{ matrix.targets }}
+        run: ./scripts/fuzz-bounded.sh "$PKG" 12m $TARGETS
+      - name: upload any discovered crashers
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fuzz-crashers-${{ strategy.job-index }}
+          path: |
+            internal/format/testdata/fuzz/
+            internal/restore/testdata/fuzz/
+          if-no-files-found: ignore

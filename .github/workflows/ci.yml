@@ -1,0 +1,495 @@
+# CI for the downpipe Go reference (format + offline reader/CLI). Small independently
+# failing jobs with a single CI Success sentinel for branch protection. Deploys are not
+# part of CI (the CLI is a binary; releases are dispatch-only in release.yml).
+name: CI
+
+# paths-ignore is deliberately down to two entries. "**.md" and "docs/**" used to be here
+# and they were a gate you could switch off by choosing a file extension.
+#
+# Measured, not argued. The conformance vectors carry the recovery bundle as archive BYTES,
+# at internal/format/testdata/vectors/*/archive/_RECOVERY/downpipe/0.1.0/FORMAT.md and
+# RECOVER.md, and those bytes are covered by a signed SHA384SUMS. Rewriting one line of one
+# such file in a scratch worktree turns `go test ./internal/format` from exit 0 to exit 1.
+# Under "**.md" that commit triggered NO CI run at all, because the signed bytes live in a
+# file ending .md.
+#
+# That last claim was true of ONE vector when it was written, and why is worth keeping.
+# seg-single-chunk is FuzzReaderOpen's baseline, loaded with CheckRecoveryBundle set as a
+# positive control before fuzzing, so a tamper there did fail; the identical tamper under
+# gzip-codec, seg-multi-chunk or master-capsule left the whole suite at exit 0, twelve
+# tampers out of twelve at 6e152f5. The recovery-bundle-tampered vector does not close that
+# gap either: it asserts only that the open is refused, which any unverifiable bundle
+# satisfies. The claim holds for all 49 archive vectors from 9c2ce92, which runs every
+# committed bundle through VerifyBundle as a TestConformance subtest
+# (internal/format/conformance_bundle_test.go).
+# "docs/**" did the same for docs/format/schema.json, the normative machine-readable schema
+# every vector is validated against: breaking its formatVersion const makes
+# scripts/schema-validate/validate.mjs exit 1, and that commit ran nothing either.
+#
+# Every markdown file in this repository is read by a test, checked by a gate, or is archive
+# bytes inside the corpus, so none of it is prose CI can afford to skip. docs/format/SPEC.md
+# is the normative contract, docs/format/CONFORMANCE.md is compared against the vector
+# directory listing by scripts/check-vectors-listing.sh, and README.md, CHANGELOG.md,
+# CONTRIBUTING.md and SECURITY.md are each asserted by at least one Go test. The cost is that
+# a typo fix runs the full matrix; the alternative is that the specification and the corpus
+# are the only artefacts here nothing checks.
+#
+# LICENSE* AND .GITIGNORE ARE NO LONGER IGNORED EITHER, for a reason the analysis above does not cover.
+# This workflow's CI Success check is required by protect-main with no bypass actor, admins included.
+# A pull request whose only changed file matched one of those two entries started no run, so the
+# required check never reported and GitHub refused to merge it: the reader argument above is about
+# whether a gate reads the file, and says nothing about whether the required check can run at all. The
+# cost is that a licence or ignore-file-only change now runs the full matrix; the alternative was that
+# such a change could never be merged by anyone.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.26.6" # 1.26.4 was NOT patched against GO-2026-5856 (crypto/tls ECH privacy leak)
+  # and 1.26.5 was NOT patched against GO-2026-6218/6090/6088/5972/5026 (net/url, crypto/tls,
+  # encoding/xml, encoding/asn1, net/http), which govulncheck reports as AFFECTING this code, so
+  # the gating govulncheck job fails on either
+  GOLANGCI_LINT_VERSION: "v2.12.2" # pinned off @latest for reproducible CI
+  GOVULNCHECK_VERSION: "v1.4.0" # pinned off @latest for reproducible CI
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Exercise the patched build toolchain and the declared MSRV floor (go 1.26, the
+    # go.mod minimum) so a source build on either can never silently regress. The MSRV
+    # row uses GOTOOLCHAIN=local to pin the matrix Go rather than letting go.mod's
+    # `toolchain go1.26.6` directive auto-upgrade it.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - go: "1.26.6" # patched build/release toolchain
+            gotoolchain: auto
+          - go: "1.26" # MSRV floor declared in go.mod
+            gotoolchain: local
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ matrix.go }}" }
+      # Each step below is a separate verdict, so each carries `if: ${{ !cancelled() }}` and the
+      # job reports all four rather than stopping at the first. Steps in a job are fail-fast by
+      # default, which is right for a build and wrong for a gate suite: an unformatted file would
+      # otherwise hide a race-detector failure, and the run would name the smaller problem. The
+      # cost when the build is genuinely broken is that go test also fails, which is one extra
+      # red step and no lost information.
+      # THIS STEP USED TO READ ITS VERDICT FROM STDOUT ALONE, and both ways that lies were
+      # reproduced. gofmt reports a file it cannot parse or cannot read on STDERR, exits 2, and
+      # prints nothing on stdout, so `test -z "$(gofmt -l .)"` saw an empty string and passed on
+      # a file gofmt had never read. The same line also passed on a checkout holding no Go files
+      # at all. The status is captured now, and the count of what was walked has a floor, so this
+      # step cannot report a formatting verdict it did not reach.
+      - name: gofmt (fail on any unformatted file)
+        if: ${{ !cancelled() }}
+        run: |
+          unformatted="$(gofmt -l .)" || { echo '::error::gofmt exited non-zero, so it reached no verdict on formatting (its own error is above)'; exit 1; }
+          walked="$(find . -name '*.go' | wc -l | tr -d ' ')"
+          if [ "$walked" -lt 150 ]; then
+            echo "::error::gofmt walked $walked Go file(s), under the floor of 150, so this step has not looked at what it claims to cover"
+            exit 1
+          fi
+          if [ -n "$unformatted" ]; then
+            echo '::error::run gofmt -s -w'
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
+          echo "gofmt: $walked Go file(s) walked, none unformatted"
+      # `go vet ./...` over no packages exits 1 ("no packages to vet"), so it has no
+      # examined-nothing pass. Measured, not assumed.
+      - name: go vet
+        if: ${{ !cancelled() }}
+        run: go vet ./...
+      # `go build ./...` over no packages exits 0 with only a warning, so on its own it WOULD
+      # report a pass having built nothing. It carries no floor of its own because that state
+      # reddens the two steps around it: go vet and go test both exit 1 over no packages, and
+      # both carry `if: !cancelled()` so neither can be skipped past. Measured, not assumed. A
+      # floor here would only repeat what those two already prove.
+      - name: go build
+        if: ${{ !cancelled() }}
+        run: go build ./...
+      - name: go test (race, shuffled)
+        if: ${{ !cancelled() }}
+        env:
+          GOTOOLCHAIN: ${{ matrix.gotoolchain }}
+        # -shuffle=on randomises ordering so a test cannot silently depend on another.
+        run: go test -race -shuffle=on ./...
+
+  coverage:
+    name: Coverage (gated)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      # Statement coverage is GATED per package: internal/crypto at 90%, every other
+      # package at 85% (scripts/coverage-gate.sh, which aggregates the profile's statement
+      # blocks and fails loudly on a package that is absent from the profile entirely).
+      # -coverpkg=./... so a package's coverage counts the tests that actually exercise it,
+      # wherever they live; -race so the gated execution is the same one build-test runs.
+      - name: go test coverage (race, cross-package)
+        run: go test -race -shuffle=on -coverpkg=./... -coverprofile=coverage.out ./...
+      # The gate's own gate. It proves the script FAILS AND SAYS SO on a below-floor
+      # profile, which is the property that was broken: the job exited 1 correctly and
+      # printed no verdict, because a bare `awk` under `set -e` terminated the script before
+      # the summary line below it. An exit-code assertion cannot see that, so --self-test
+      # asserts on the output and pairs each assertion with a passing-profile control.
+      - name: coverage gate self-test
+        shell: bash
+        run: ./scripts/coverage-gate.sh --self-test
+      - name: coverage gate
+        # `shell: bash` is load-bearing here and not decoration. Without it a `run` step uses the
+        # DEFAULT shell, which GitHub documents as `bash -e {0}`: -e but NO pipefail. A pipeline's
+        # status is its LAST command's, so `coverage-gate.sh | tee` exited with tee's status and this
+        # step could not fail however far below its floor a package fell. The gate happens to pass
+        # today, which is exactly when to close this: it was one regression away from a package
+        # dropping under 85% with a green tick over it.
+        #
+        # Naming the shell is what switches it to `bash --noprofile --norc -eo pipefail {0}`, so the
+        # gate's own exit code reaches the job. The pipe is kept because coverage.txt is uploaded as
+        # an artefact, and the fix is to make the pipe honest rather than to stop recording the run.
+        shell: bash
+        run: ./scripts/coverage-gate.sh coverage.out | tee coverage.txt
+      - name: upload coverage profile
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-profile
+          path: |
+            coverage.out
+            coverage.txt
+          if-no-files-found: error
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      # THE TRIPWIRE'S OWN FIXTURES, GRADED BEFORE THE CHANGE LANDS RATHER THAN AFTER.
+      # Until now the only thing that ran them was the tripwire's own workflow_run job, which
+      # fires after a push to main has already happened, so a change that broke them reached
+      # main and was graded afterwards. That is the same shape as a guard living inside the
+      # chain it grades. This step is deliberately BEFORE the Go toolchain and golangci-lint,
+      # because a step after a failing one does not run, and the `if:` keeps that true if the
+      # steps are ever reordered. It needs no setup-node: the runner image ships node, and the
+      # script imports nothing outside node: builtins, which is the property the tripwire is
+      # built on.
+      - name: Red-main tripwire self-test
+        if: ${{ !cancelled() }}
+        run: node .github/tripwire/red-main-tripwire.mjs --selftest
+      # Pin comments graded against the live ref graph, in the same place and for the same reason as the
+      # step above: it needs no Go toolchain, the runner image ships a node new enough for it, and the
+      # script imports nothing outside node: builtins. `!cancelled()` so a tripwire failure and a pin
+      # failure are reported in one run rather than one per push; neither hides the other.
+      #
+      # This repository is why the gate exists. release.yml pinned the signer to a sha commented v3.7.0
+      # that is really v3.8.1, and the tidy-looking repair, moving the sha down to the tag the comment
+      # named, would have downgraded the signing step. The gate's own check for that is that its failure
+      # message names the safe direction, and its self-test asserts the message says so.
+      - name: Action-pin comments agree with the shas they annotate
+        if: ${{ !cancelled() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make lint-action-pins
+      # Every script entry point enrolled in a completion guard, so a gate cannot reach exit 0 without
+      # reaching its own verdict. Alongside the two steps above and for the same reasons: no Go toolchain,
+      # no token, no network, and the runner image ships a node new enough for it. `!cancelled()` so a
+      # tripwire, a pin and an enrolment failure are all reported in one run rather than one per push.
+      #
+      # This repository is why the gate had to be written rather than copied. It has no package.json, so
+      # the derivation the sibling repos use would have found nothing here and passed; the channel is the
+      # Makefile, and four of the six entry points are bash, which needed a shell guard of their own.
+      - name: Script entry points enrolled in the completion guard
+        if: ${{ !cancelled() }}
+        run: make lint-verdict-guard
+
+      # HOUSE STYLE, which binds this workspace and was graded here by nothing. This repository was
+      # recorded as having ZERO em dashes, and that reading came from a .ts/.js/.md corpus: it matches 114
+      # of the 1,066 tracked files and NONE of the 216 .go files that are the product. Measured over .go it
+      # holds 44, across 14 files, three of which are not tests.
+      #
+      # Nothing is fixed and nothing needs to be: all 44 were tagged with a code/comment/string reader and
+      # all 44 are COMMENTS, so none is a customer-facing message, an error string or a CLI output line.
+      # They are pinned per file and per rule, and the baseline refuses an increase, an unbanked decrease
+      # and a dangling entry alike, so new work is graded at full strength without rewriting 44 dense
+      # comments to clear a number.
+      #
+      # It runs in this job with the other node gates and needs no Go toolchain, no token and no network.
+      - name: House style (em dashes and en dashes) against the recorded baseline
+        if: ${{ !cancelled() }}
+        run: make lint-prose
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      - name: golangci-lint (with what it excluded announced)
+        # golangci-lint v2 is built from source with the CI Go by scripts/lint-announce.sh, because the
+        # prebuilt action binary is built with go1.24 and refuses a go1.26 target. GOLANGCI_LINT_VERSION
+        # is what pins it, and the script prints the invocation it resolved to.
+        #
+        # Two examined-nothing states were put to it. Over no packages it exits 1 (status 5, "no go files
+        # to analyze"), so an empty checkout cannot read as a pass. The state that DOES turn it green is a
+        # configuration one: `linters.exclusions.paths: [".*"]` in .golangci.yml takes a fixture from two
+        # errcheck findings to "0 issues." and exit 0, reproduced red to green.
+        #
+        # IT IS ANNOUNCED RATHER THAN FORBIDDEN. A rule strict enough to catch `.*` would also forbid a
+        # legitimately narrow exclusion, and this repository has one (misspell's ignore-rules for the
+        # product name "artifact"). Leaving it to the diff was rejected as well: a reviewer sees a diff
+        # once, and a log line is seen on every run. The script prints what the linter actually excluded
+        # and how many Go files it walked, so an exclusion of any width names itself in the log. An
+        # exclusion that is legitimate loses nothing by being named.
+        #
+        # The measurement that widened it: with NO exclusions block in .golangci.yml, this repository's
+        # verbose run already showed "nolint_filter: 1/0", one real issue suppressed by a //nolint comment
+        # in a test file and invisible in every CI log until now. Announcing only the configuration would
+        # have missed the suppression the repository actually has.
+        run: ./scripts/lint-announce.sh
+      # The announcement's own gate, in the same shape as the coverage gate's: it drives the whole script
+      # with a stub linter over recorded verbose output, so an announcement that stopped announcing is
+      # caught here rather than being read as a quiet clean run. It costs no lint run at all. Placed after
+      # the real run so a broken announcement and a real lint finding are not confused for one another,
+      # and `!cancelled()` so it is reported even when the lint above went red.
+      - name: lint announcement self-test
+        if: ${{ !cancelled() }}
+        run: ./scripts/lint-announce.sh --self-test
+
+  govulncheck:
+    name: Vulnerabilities
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      - name: govulncheck
+        run: |
+          go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
+          "$(go env GOPATH)/bin/govulncheck" ./...
+      # THE npm TREE THIS REPOSITORY ALSO HAS, and which govulncheck cannot see. scripts/schema-validate
+      # is a real npm project with its own lockfile, and until nothing in this repository
+      # audited it: it carried four advisories, three of them HIGH, and all four were in the PRODUCTION
+      # tree, since ajv is its only dependency. They were closed by pinning ajv to 8.20.0 and letting the
+      # lockfile take fast-uri 3.1.5, which the declared range already allowed.
+      # : fast-uri 3.1.5 itself turned out to carry four HIGH advisories (GHSA-5jgf-p345-68v8,
+      # GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp; all fixed at 3.1.6), unmasked once
+      # the govulncheck step above stopped failing first and this step finally ran again. Closed by
+      # `npm update fast-uri` inside the declared ajv ^3.0.1 range (now locked at 3.1.7); package.json
+      # is untouched, since the code never imports fast-uri directly.
+      #
+      # NO ACKNOWLEDGEMENT PATH AND NO GATE FILE HERE, deliberately, and the divergence from other
+      # repositories in this product's codebase is stated rather than left to be noticed. Those
+      # repositories carry a JavaScript dependency-advisory gate script that grades a build tree it
+      # cannot always fix. This tree is one direct dependency deep with nothing transitive to be trapped
+      # behind, so a plain audit at `low` is a hard gate that can actually be satisfied, and adding a
+      # JavaScript gate file plus a JSON acknowledgement file to a Go repository to say the same thing
+      # would be more machinery than the question has. If this tree ever grows an advisory nothing can
+      # close, the right move is to copy that gate here, not to soften this line.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: scripts/schema-validate/package-lock.json
+      - name: npm audit (scripts/schema-validate, every tree, any severity)
+        working-directory: scripts/schema-validate
+        run: |
+          npm audit --omit=dev --audit-level=low
+          npm audit --audit-level=low
+
+  fuzz:
+    name: Fuzz (${{ matrix.pkg }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pkg: ./internal/format
+            targets: FuzzCanonJSON FuzzCanonNum FuzzManifest FuzzShard FuzzReaderOpen FuzzRunlogKeyless FuzzRunlogChainAnomaly
+          - pkg: ./internal/restore
+            targets: FuzzD1Transcode FuzzDirTargetKey
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      # Bounded native-fuzz pass over the security-critical untrusted-byte parse/verify
+      # paths of the offline reader (the canonical-JSON encoder, the canonical-number
+      # readers, the manifest and shard decoders, and the whole archive open/verify path).
+      # Each target is seeded from the real conformance vectors and asserts the safety
+      # invariants (no panic, no hang, no forged-archive acceptance). The seed corpus and
+      # any checked-in crashers under testdata/fuzz run as ordinary unit tests in the
+      # Build & Test job on every push; this job spends a bounded budget searching for new
+      # crashers so CI stays fast. A surfaced crash fails the job.
+      # The classifier's own gate, in the same shape as the coverage gate's and the lint
+      # announcement's: it drives the whole retry policy with canned logs and a stub runner, so a
+      # classifier that has stopped classifying is caught here rather than quietly excusing every
+      # failure below. No Go toolchain, no fuzzing budget, about a second. Placed BEFORE the real
+      # run, unlike the lint one, because this gate decides how the real run is read.
+      - name: fuzz classifier self-test
+        run: ./scripts/fuzz-bounded.sh --self-test
+      # One package per matrix row: `go test -fuzz` accepts a single package, and the targets span
+      # internal/format and internal/restore.
+      #
+      # NOT a bare `go test -fuzz` loop any more. `-fuzztime <duration>` expiry is the fuzzing
+      # coordinator's normal termination path and it races its own context cancellation, so a clean
+      # budget expiry surfaces as `--- FAIL: <target> (40.6s) / context deadline exceeded` with no
+      # crasher, no input and nothing to re-run. It did that three times in five days here, on three
+      # different targets across both packages, and the third one held main red for over an hour.
+      # scripts/fuzz-bounded.sh reads the corpus rather than the exit status to tell a finding from
+      # an expiry: a crasher fails on the first attempt and is never re-run, a bare expiry is
+      # re-run once, and a repeat fails. Its header carries the run ids and the Go source lines.
+      - name: go test -fuzz (each target, bounded, expiry classified)
+        env:
+          PKG: ${{ matrix.pkg }}
+          TARGETS: ${{ matrix.targets }}
+        run: ./scripts/fuzz-bounded.sh "$PKG" 40s $TARGETS
+
+  schema-validate:
+    name: Schema (ajv vectors)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: scripts/schema-validate/package-lock.json
+      # The pin check inside validate.mjs runs before a vector is read and decides, per lockfile key,
+      # whether to compare it, set it aside or refuse. Its most consequential arm cannot be reached by
+      # this repository's own lockfile: lockfileVersion 3 emits a versioned key per WORKSPACE MEMBER and
+      # there is no workspace here. That arm used to report such a key NOT INSTALLED at exit 1 with the
+      # remedy `npm ci`, which cannot fix it. The self-test needs no install, so it runs BEFORE `npm ci`
+      # and would still say so on a day the install itself is what is broken.
+      #
+      # WHY THIS JOB IS THE ONE THAT CARRIES THE PIN. Everything the step below asserts about the frozen
+      # downpipe/0.1.0 conformance vectors is asserted BY ajv, so a run that did not compare ajv graded
+      # the format under a validator this repository did not pin, on a green run. Until a
+      # lockfile entry the classifier could not read left through a guard clause upstream of every
+      # bucket, so deleting one field from the ajv entry, or replacing it with npm's own
+      # `{ resolved, link: true }` shape, exited 0 with a pass line that named no discrepancy at all.
+      # The classifier now refuses at exit 2 on an entry it cannot read, and refuses unless ajv itself
+      # was among the packages compared, by name.
+      - name: lockfile classifier self-test
+        working-directory: scripts/schema-validate
+        run: node validate.mjs --self-test
+      # Confirm docs/format/schema.json is well-formed and that every structurally
+      # valid conformance-vector manifest and RUNLOG entry matches it, while the
+      # deliberately malformed negatives are rejected exactly where SPEC.md says a
+      # reader rejects them (SPEC.md section 14). ajv is pinned in the lockfile.
+      - name: ajv validate vectors against schema.json
+        working-directory: scripts/schema-validate
+        run: |
+          npm ci
+          npm run validate
+
+  vectors-listing:
+    name: Vectors listing (docs match disk)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with: { egress-policy: audit }
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with: { persist-credentials: false }
+      # Confirm the conformance vectors enumerated in docs/format/SPEC.md and
+      # docs/format/CONFORMANCE.md exactly equal the directory listing under
+      # internal/format/testdata/vectors/ (SPEC.md section 14): no doc names a
+      # vector that is missing on disk, and no on-disk vector is undocumented.
+      - name: check enumerated vector names equal the directory listing
+        run: ./scripts/check-vectors-listing.sh
+      - name: check CI Success gates on every job, and that a skipped job fails the run
+        # `if: ${{ !cancelled() }}` so a failure in the step above cannot take this one with it.
+        # This job holds two hand-maintained enumerations, and a fail-fast step order would mean
+        # the second is only ever read on days the first is green.
+        if: ${{ !cancelled() }}
+        run: ./scripts/check-ci-gate-completeness.sh
+
+  ci-success:
+    name: CI Success
+    needs: [build-test, lint, govulncheck, coverage, fuzz, schema-validate, vectors-listing]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    if: always()
+    steps:
+      - name: Check required jobs
+        # Generic by construction: reads the job's own `needs:` context at run time (toJSON(needs)),
+        # so it cannot drift out of sync with that list the way a hand-written require_success call
+        # per job name can. See workflow-transform.mjs (PUBLISH) for why this replaced a bespoke,
+        # per-repository aggregation script.
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          status=0
+          echo "required job results:"
+          for name in $(printf '%s' "$NEEDS_JSON" | jq -r 'keys[]' | sort); do
+            result=$(printf '%s' "$NEEDS_JSON" | jq -r --arg n "$name" '.[$n].result')
+            printf '  %-28s %s\n' "$name" "$result"
+            case "$result" in
+              success) ;;
+              skipped) echo "::notice::job '$name' was skipped (an event-gated job; not a cross-repo gate, none of those ship in this export)" ;;
+              *) echo "::error::required job '$name' reported '$result'"; status=1 ;;
+            esac
+          done
+          if [ "$status" -ne 0 ]; then
+            echo "::error::a required job did not pass"
+            exit 1
+          fi
+          echo "all required jobs accounted for"
+      - name: No required job may fail, be cancelled or be skipped
+        # A second, LITERAL contains(needs.*.result, '<state>') expression: this repository's
+        # own scripts/check-ci-gate-completeness.sh greps the workflow text for exactly this
+        # call shape per state, and treats a comment or echo string that merely quotes the word
+        # as not satisfying it (see that script's own header). The step-level if: below is
+        # always() (a BROADENING condition, the only kind that script's own step-level check
+        # allows): a narrowing if: here would let this step be skipped on the good path, which
+        # is exactly the gameable shape that check exists to refuse. The real gate is the shell
+        # conditional inside run:, driven by the literal expression captured in the env var.
+        if: always()
+        env:
+          HAS_BAD_RESULT: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: |
+          if [ "$HAS_BAD_RESULT" = "true" ]; then
+            echo "::error::a required job reported failure, cancellation or skip"
+            exit 1
+          fi

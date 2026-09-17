@@ -1,0 +1,2 @@
+go test fuzz v1
+string("Con.\xfb\xfb\xfb\xed")

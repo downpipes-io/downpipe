@@ -1,0 +1,31 @@
+{
+  "note": "Reach floors and downgrade floors for scripts/action-pin-comment-gate.mjs. minPins and minFilesWithUses are FLOORS, not equalities: adding a step is ordinary, losing one silently is the failure this records. The floor map is a MINIMUM VERSION per action, and it is also an ALLOW-LIST, because it is keyed by full owner/repo and an action with no entry fails as NO-FLOOR. That is what catches a fork or a typosquat, which the version checks cannot, because they would grade a fork honestly against the fork. Lower a floor only in the same commit as the pin, with the reason in the commit message.",
+  "invocation": "make lint-action-pins",
+  "reach": {
+    "minPins": 50,
+    "minFilesWithUses": 10,
+    "observedAtPin": {
+      "date": "2026-09-07",
+      "pins": 50,
+      "filesWithUses": 10,
+      "distinctActions": 12
+    }
+  },
+  "floor": {
+    "actions/attest-build-provenance": "2.4.0",
+    "actions/checkout": "6.0.2",
+    "actions/dependency-review-action": "4.5.0",
+    "actions/setup-go": "5.6.0",
+    "actions/setup-node": "4.4.0",
+    "actions/upload-artifact": "4.6.2",
+    "contributor-assistant/github-action": "2.6.1",
+    "github/codeql-action": "3.36.2",
+    "goreleaser/goreleaser-action": "6.1.0",
+    "ossf/scorecard-action": "2.4.1",
+    "sigstore/cosign-installer": "3.8.1",
+    "step-security/harden-runner": "2.19.4"
+  },
+  "unpinnedException": {
+    "slsa-framework/slsa-github-generator": "slsa-verifier refuses a sha-pinned generator ref"
+  }
+}

@@ -1,0 +1,42 @@
+# Gitleaks config for the open-core downpipe reader. Extends the upstream default
+# ruleset (do not replace it) and allowlists paths that hold no real secrets: the
+# vendored dependency tree, the conformance vector corpus, and the fuzz seed corpus.
+# These contain deliberate test fixtures and binary archives that would otherwise
+# produce false positives.
+title = "downpipe gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Paths with no real secrets (vendored deps and test corpora)"
+paths = [
+  '''vendor/''',
+  '''internal/format/testdata/''',
+  '''cmd/downpipe/testdata/''',
+  '''internal/format/testdata/fuzz/''',
+  '''docs/format/CONFORMANCE\.md''',
+]
+
+# testAzureKey (internal/source/azure_test.go and its cmd/downpipe mirror) is a syntactically
+# valid base64 string used to drive the Azure Shared Key signer through its test cases; it is
+# not a credential. It base64-decodes to the literal text "fake-key-for-string-to-sign-only",
+# and its only use is as HMAC-SHA256 key material in an in-process httptest server, never a real
+# Azure account. gitleaks' default generic-api-key rule flags it because a base64 constant of
+# that entropy and length is indistinguishable in shape from a real key.
+#
+# Scoped to THIS rule (generic-api-key), not the top-level [allowlist] above: gitleaks ORs a
+# block's paths and regexes together, so adding these two file paths to the untargeted allowlist
+# above would blind every rule across both files, not just this one constant (the engine repo's
+# .gitleaks.toml documents the same footgun for its own downpipe-break-glass-private-key rule).
+# A minimal [[rules]] stub carrying only the id merges into the default rule definition rather
+# than replacing it, so generic-api-key still fires everywhere else in the tree; confirmed by
+# adding an unrelated sk_live-shaped string outside these two paths and seeing it still flagged.
+[[rules]]
+id = "generic-api-key"
+
+[rules.allowlist]
+paths = [
+  '''internal/source/azure_test\.go''',
+  '''cmd/downpipe/azure_source_test\.go''',
+]
