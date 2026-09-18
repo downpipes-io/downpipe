@@ -89,6 +89,18 @@ is in this repository:
 
 Reads format versions: `downpipe/0.1.x`.
 
+### Changed
+
+- The first public CI run is green on a standalone clone, and the README links the engine and
+  console repositories the way theirs link this one.
+
+### Dependencies
+
+- golang.org/x/crypto v0.57.0.
+- GitHub Actions pins: step-security/harden-runner 2.21.1, actions/checkout 7.0.1,
+  actions/setup-go 7.0.0, actions/setup-node 7.0.0, actions/upload-artifact 7.0.1,
+  github/codeql-action 4.38.0.
+
 ## [0.3.0] - 2026-09-06
 
 Reads format versions: `downpipe/0.1.x`.
