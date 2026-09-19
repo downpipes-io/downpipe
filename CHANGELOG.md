@@ -89,6 +89,14 @@ is in this repository:
 
 Reads format versions: `downpipe/0.1.x`.
 
+## [0.3.2] - 2026-09-21
+
+Reads format versions: `downpipe/0.1.x`.
+
+The first release built and attested by the public release workflow. It carries
+everything below and the 0.3.1 changes, which were tagged on 17 September but never
+released.
+
 ### Changed
 
 - The first public CI run is green on a standalone clone, and the README links the engine and
@@ -100,6 +108,22 @@ Reads format versions: `downpipe/0.1.x`.
 - GitHub Actions pins: step-security/harden-runner 2.21.1, actions/checkout 7.0.1,
   actions/setup-go 7.0.0, actions/setup-node 7.0.0, actions/upload-artifact 7.0.1,
   github/codeql-action 4.38.0.
+
+## [0.3.1] - 2026-09-17
+
+Reads format versions: `downpipe/0.1.x`.
+
+Tagged but not released: the tag arrived in the same push that created the release
+workflow, so no binaries were built and nothing was attested. Its changes ship in 0.3.2.
+
+### Changed
+
+- The provisioning client's calls to the Cloudflare API refuse to follow a redirect and
+  give up after 30 seconds, so the operator's API token is never carried to another host.
+
+### Dependencies
+
+- golang.org/x/crypto v0.56.0.
 
 ## [0.3.0] - 2026-09-06
 
@@ -322,6 +346,8 @@ First public release of the offline reader, the recovery CLI and the library.
 - `version`, `--version` and `-v` report the build version, injected at release
   time and reported as `dev` for an unstamped local build.
 
-[Unreleased]: https://github.com/downpipes-io/downpipe/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/downpipes-io/downpipe/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.2
+[0.3.1]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.1
 [0.3.0]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.0
 [0.1.0]: https://github.com/downpipes-io/downpipe/releases/tag/v0.1.0
