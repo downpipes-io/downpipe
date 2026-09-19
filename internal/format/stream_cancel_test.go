@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -35,6 +36,13 @@ type blockingCtxStore struct {
 	failShard int
 	blockFrom int
 	released  atomic.Int32
+	// blockedStarted is closed once the first blocking fetch is parked on the context. The
+	// poisoned shard waits for it before failing, so the walk is guaranteed to have a fetch
+	// in flight when it tears down; without that handshake a slow runner can fail the walk
+	// before any later shard was scheduled, and "no blocked fetch was released" reads as a
+	// cancellation defect when nothing was there to release.
+	blockedStarted chan struct{}
+	startOnce      sync.Once
 }
 
 func shardIndexOf(key string) (int, bool) {
@@ -54,9 +62,18 @@ func (b *blockingCtxStore) Get(key string) ([]byte, error) { return b.inner.Get(
 func (b *blockingCtxStore) GetContext(ctx context.Context, key string) ([]byte, error) {
 	if n, ok := shardIndexOf(key); ok {
 		if n == b.failShard {
+			if b.blockedStarted != nil {
+				select {
+				case <-b.blockedStarted:
+				case <-time.After(2 * time.Second):
+				}
+			}
 			return nil, fmt.Errorf("simulated read failure for %s", key)
 		}
 		if n >= b.blockFrom {
+			if b.blockedStarted != nil {
+				b.startOnce.Do(func() { close(b.blockedStarted) })
+			}
 			<-ctx.Done()
 			b.released.Add(1)
 			return nil, ctx.Err()
@@ -72,7 +89,7 @@ func (b *blockingCtxStore) GetContext(ctx context.Context, key string) ([]byte, 
 func TestConcurrentTeardownCancelsInFlightFetches(t *testing.T) {
 	const nshards = 8
 	store, bgPriv, verifier, _ := buildMultiShardArchive(t, "dp_cancel_tear", nshards, nshards)
-	bs := &blockingCtxStore{inner: store, failShard: 1, blockFrom: 2}
+	bs := &blockingCtxStore{inner: store, failShard: 1, blockFrom: 2, blockedStarted: make(chan struct{})}
 
 	before := runtime.NumGoroutine()
 	start := time.Now()

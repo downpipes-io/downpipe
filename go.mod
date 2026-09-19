@@ -13,7 +13,7 @@ go 1.26.0
 // govulncheck (ASVS V15.2.1).
 toolchain go1.26.6
 
-require golang.org/x/crypto v0.56.0
+require golang.org/x/crypto v0.57.0
 
 // downpipe-sys-deps-01: the ML-DSA-87 signature primitive is pinned to a pre-release
 // pseudo-version of filippo.io/mldsa, whose API the upstream still marks unstable. The
