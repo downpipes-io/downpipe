@@ -57,17 +57,22 @@ sboms:
     args: ["app", "-licenses", "-json", "-output", "$document", "-main", "cmd/downpipe", "../"]
 
 # Keyless attestation of the checksums file via the OIDC identity of the release
-# workflow (no long-lived key held; verify with the cosign instructions in the
-# release notes). Requires id-token: write in the workflow (set below).
+# workflow (no long-lived key held). The signature is a Sigstore BUNDLE
+# (checksums.txt.cosign-bundle): cosign 3 signs in bundle form by default and, asked
+# for the older detached signature plus certificate, tries to write a bundle to an
+# empty path and fails ("create bundle file: open : no such file or directory"), which
+# is what stopped the v0.3.2 release once the installer action
+# moved from cosign 2 to cosign 3. The engine and console release workflows sign the
+# same way. `output: true` only echoes cosign's output into the log; the file is what
+# cosign writes at ${signature}. Requires id-token: write in the workflow (set below).
 signs:
   - cmd: cosign
     artifacts: checksum
-    certificate: "${artifact}.pem"
+    signature: "${artifact}.cosign-bundle"
     output: true
     args:
       - sign-blob
-      - "--output-certificate=${certificate}"
-      - "--output-signature=${signature}"
+      - "--bundle=${signature}"
       - "${artifact}"
       - --yes
 
@@ -75,10 +80,15 @@ release:
   draft: true # the maintainer reviews and publishes
   prerelease: auto
   footer: |
-    Verify a download: check the binary's SHA-256 against `checksums.txt`, and
-    verify `checksums.txt` with `cosign verify-blob` using the certificate and
-    signature attached to the release (the identity is this repo's release
-    workflow). The recovery/reader path makes no network call.
+    Verify a download: check the binary's SHA-256 against `checksums.txt`, then
+    verify `checksums.txt` against the bundle attached to the release:
+
+        cosign verify-blob --bundle checksums.txt.cosign-bundle checksums.txt \
+          --certificate-identity-regexp '^https://github.com/downpipes-io/downpipe/\.github/workflows/release\.yml@refs/tags/v' \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+    The identity is this repository's release workflow at the tag. The
+    recovery/reader path makes no network call.
 
 changelog:
   use: github

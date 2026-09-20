@@ -89,12 +89,28 @@ is in this repository:
 
 Reads format versions: `downpipe/0.1.x`.
 
+## [0.3.3] - 2026-09-21
+
+Reads format versions: `downpipe/0.1.x`.
+
+The first release built and attested by the public release workflow. The reader is
+the 0.3.2 tree unchanged; only the release tooling differs. It carries the 0.3.2 and
+0.3.1 changes below.
+
+### Changed
+
+- The release's `checksums.txt` is signed as a Sigstore bundle
+  (`checksums.txt.cosign-bundle`), the form cosign 3 produces and the engine and console
+  releases already use, in place of the detached signature and certificate.
+- The release workflow pins goreleaser and cosign to exact versions.
+
 ## [0.3.2] - 2026-09-21
 
 Reads format versions: `downpipe/0.1.x`.
 
-The first release built and attested by the public release workflow. It carries
-everything below and the 0.3.1 changes, which were tagged on 17 September but never
+Tagged but not released: the release workflow's signing step failed once the installer
+action moved from cosign 2 to cosign 3, so no binaries were published. Its changes ship
+in 0.3.3. It carries the 0.3.1 changes, which were tagged on 17 September but never
 released.
 
 ### Changed
@@ -346,7 +362,8 @@ First public release of the offline reader, the recovery CLI and the library.
 - `version`, `--version` and `-v` report the build version, injected at release
   time and reported as `dev` for an unstamped local build.
 
-[Unreleased]: https://github.com/downpipes-io/downpipe/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/downpipes-io/downpipe/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.3
 [0.3.2]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.2
 [0.3.1]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.1
 [0.3.0]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.0
