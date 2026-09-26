@@ -6,7 +6,7 @@ name: Scorecard
 on:
   branch_protection_rule:
   schedule:
-    - cron: "41 5 * * 1" # weekly, Mondays 05:41 UTC
+    - cron: "41 18 * * 0" # weekly, Sundays 18:41 UTC
   push:
     branches: [main]
   workflow_dispatch:

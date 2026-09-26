@@ -11,7 +11,7 @@ on:
     # Weekly, off the hour. Scheduled runs fire from the default branch only. Note GitHub
     # auto-pauses cron on a repository with no activity for 60 days, so a silent absence of
     # runs is not evidence of a clean sweep.
-    - cron: "17 2 * * 1"
+    - cron: "17 17 * * 0"
   workflow_dispatch:
 
 permissions:

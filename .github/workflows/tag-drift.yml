@@ -14,7 +14,7 @@ on:
     branches: [main]
     paths: ["cmd/downpipe/main.go"]
   schedule:
-    - cron: "37 4 * * 1" # weekly, Mondays 04:37 UTC, so a stale tag surfaces even with no push
+    - cron: "37 17 * * 0" # weekly, Sundays 17:37 UTC, so a stale tag surfaces even with no push
   workflow_dispatch:
 
 permissions:

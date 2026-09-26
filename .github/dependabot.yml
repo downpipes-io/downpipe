@@ -1,8 +1,9 @@
 version: 2
+# Version updates run on Saturday evening, Melbourne time, so no pull request opens on a weekday.
 updates:
   - package-ecosystem: gomod
     directory: "/"
-    schedule: { interval: weekly }
+    schedule: { interval: weekly, day: saturday, time: "20:00", timezone: "Australia/Melbourne" }
     groups:
       gomod:
         patterns:
@@ -13,7 +14,7 @@ updates:
           - "*"
   - package-ecosystem: github-actions
     directory: "/"
-    schedule: { interval: weekly }
+    schedule: { interval: weekly, day: saturday, time: "20:00", timezone: "Australia/Melbourne" }
     groups:
       github-actions:
         patterns:

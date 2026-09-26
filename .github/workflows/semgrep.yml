@@ -11,7 +11,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: "23 6 * * 1" # weekly, Mondays 06:23 UTC, so findings surface even without a push
+    - cron: "23 19 * * 0" # weekly, Sundays 19:23 UTC, so findings surface even without a push
   workflow_dispatch:
 
 concurrency:
