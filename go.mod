@@ -24,4 +24,4 @@ require golang.org/x/crypto v0.57.0
 // guard TestMLDSAFrozenSignatureConformance (internal/crypto) re-verifies a historical
 // signature against whatever pin is in use, so any encoding change is caught at the moment
 // this line is bumped rather than at recovery time; bump the fixture in the same commit.
-require filippo.io/mldsa v0.0.0-20260215214346-43d0283efc3e
+require filippo.io/mldsa v1.0.0
