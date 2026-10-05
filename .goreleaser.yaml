@@ -1,0 +1,95 @@
+# GoReleaser config for the open-core downpipe CLI: reproducible multi-platform
+# binaries, a checksums file, a CycloneDX SBOM, and keyless artifact attestation.
+# Releases are dispatch-only (tag-driven via .github/workflows/release.yml); a
+# plain `go build` is unaffected and leaves main.version = "dev".
+version: 2
+
+project_name: downpipe
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+builds:
+  - id: downpipe
+    main: ./cmd/downpipe
+    binary: downpipe
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      # Inject the release version into main.version (cmd/downpipe/main.go). Only
+      # main.version exists today; commit/date are recorded in the release notes.
+      - -s -w -X main.version={{ .Version }}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    mod_timestamp: "{{ .CommitTimestamp }}" # reproducible builds
+
+archives:
+  - id: downpipe
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - SECURITY.md
+      - CHANGELOG.md
+      - docs/RECOVER.md
+      - docs/format/SPEC.md
+      - docs/format/CONFORMANCE.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+# CycloneDX SBOM per archive (uses the same cyclonedx-gomod the repo's
+# scripts/generate-sbom.sh pins; install it in the release workflow).
+sboms:
+  - id: archive
+    artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.cdx.json"
+    cmd: cyclonedx-gomod
+    args: ["app", "-licenses", "-json", "-output", "$document", "-main", "cmd/downpipe", "../"]
+
+# Keyless attestation of the checksums file via the OIDC identity of the release
+# workflow (no long-lived key held). The signature is a Sigstore BUNDLE
+# (checksums.txt.cosign-bundle): cosign 3 signs in bundle form by default and, asked
+# for the older detached signature plus certificate, tries to write a bundle to an
+# empty path and fails ("create bundle file: open : no such file or directory"), which
+# is what stopped the v0.3.2 release once the installer action
+# moved from cosign 2 to cosign 3. The engine and console release workflows sign the
+# same way. `output: true` only echoes cosign's output into the log; the file is what
+# cosign writes at ${signature}. Requires id-token: write in the workflow (set below).
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.cosign-bundle"
+    output: true
+    args:
+      - sign-blob
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - --yes
+
+release:
+  draft: true # the maintainer reviews and publishes
+  prerelease: auto
+  footer: |
+    Verify a download: check the binary's SHA-256 against `checksums.txt`, then
+    verify `checksums.txt` against the bundle attached to the release:
+
+        cosign verify-blob --bundle checksums.txt.cosign-bundle checksums.txt \
+          --certificate-identity-regexp '^https://github.com/downpipes-io/downpipe/\.github/workflows/release\.yml@refs/tags/v' \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+    The identity is this repository's release workflow at the tag. The
+    recovery/reader path makes no network call.
+
+changelog:
+  use: github
+  sort: asc

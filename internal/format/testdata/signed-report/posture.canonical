@@ -1,0 +1,1 @@
+{"data":{"checks":[{"id":"break-glass-recipient","severity":"critical","status":"pass"},{"id":"worm-destination","severity":"medium","status":"warn"}],"score":87},"generatedAt":"2026-09-25T00:00:00.000Z","kind":"posture","period":null}

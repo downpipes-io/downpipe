@@ -1,0 +1,44 @@
+# Lint set for the build phase. The supply-chain gates run as separate CI
+# workflows: gitleaks, semgrep, scorecard, dependency-review, cosign and SLSA are
+# in place. trivy and zizmor are deferred (no container image to scan, and the
+# workflows are pinned by SHA already), to be added if the threat surface changes.
+# gosec and bodyclose are queued for a follow-up once their package-level excludes
+# for the deliberate stdlib-crypto patterns are tuned under a local golangci-lint
+# run, so the build gate does not fail on a known-benign pattern.
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gocritic
+    - misspell
+    - revive
+    - unconvert
+    - prealloc
+  settings:
+    misspell:
+      # UK locale flags American spellings, which keeps comments in Australian
+      # English (organise, authorise, behaviour, licence).
+      locale: UK
+      # "artifact" is exempt because it is a PRODUCT NAME here, not prose: Cloudflare
+      # Artifacts is a source type, and `SourceArtifacts = "artifacts"` in
+      # internal/spec/sourcetype.go is the literal wire value, sitting alongside workers,
+      # cf-config, stream and images. Renaming it to the Australian spelling would misname
+      # a Cloudflare product and diverge from the constant.
+      #
+      # The cost, stated rather than hidden: a genuinely American "artifacts" written in
+      # prose is no longer caught. That is one word against a gate that would otherwise
+      # stay red permanently, and a red gate catches nothing at all. Every other American
+      # spelling is still flagged.
+      ignore-rules:
+        - artifact
+        - artifacts
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

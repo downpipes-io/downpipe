@@ -1,0 +1,161 @@
+{
+  "generation": "downpipe-0.1.0",
+  "formatVersion": "downpipe/0.1.0",
+  "engineVersion": "0.3.5",
+  "sealedAt": "2026-09-26T05:40:28.351Z",
+  "downpipeId": "dp_released",
+  "runs": [
+    {
+      "runId": "01K6400000FXTRGEN010000001",
+      "runlogIndex": 1,
+      "prevRunId": null,
+      "latest": false,
+      "sealPath": "buffered",
+      "records": [
+        {
+          "sourceType": "kv",
+          "name": "config/feature-flags",
+          "size": 31,
+          "plaintextSha384": "7e1c807ffd6ece8b4b5ee093b94e720054972c1055520a6680b6f8ab01221c60ed2065ecb012d933883deddd977125ca"
+        },
+        {
+          "sourceType": "kv",
+          "name": "config/greeting",
+          "size": 66,
+          "plaintextSha384": "2de9c24c3acea6e6f788c834140c0c2f26d1fcc57be5e3c1ed41ca820c834ea6823b38ab6eb818f8a92539f0fff69106"
+        },
+        {
+          "sourceType": "kv",
+          "name": "session/plain",
+          "size": 41,
+          "plaintextSha384": "5bbcc6995d0a9133952108aee0c98ad2718d372076536fabe3990fabd28e973089cb9ecb600ca01f2c10b0161a281e50"
+        },
+        {
+          "sourceType": "kv",
+          "name": "session/raced",
+          "size": 88,
+          "plaintextSha384": "9b5ba4e5efb29e10c054a791c3a11c34c53a528ba14d1559d12c26d7c5231f82dab1e93b8870da9dbb27c8bd33cbb7c4",
+          "incompleteMarker": "_vanished"
+        },
+        {
+          "sourceType": "r2",
+          "name": "docs/plain.bin",
+          "size": 900,
+          "plaintextSha384": "78fbaef48d873cefc0c78e778d01d4a89c7aa8599c952943012adb734bab006fbe71b63f6aaa2aea1d9a927e1b6fff8f"
+        },
+        {
+          "sourceType": "r2",
+          "name": "docs/report.txt",
+          "size": 42,
+          "plaintextSha384": "36cac7fbca75712cfbd88bdc974c049ee0ebe51df58452b84f07dab09a5d0a1489f99c4ee7fc082aaf4385e2f40c1bbf"
+        },
+        {
+          "sourceType": "r2",
+          "name": "media/clip.bin",
+          "size": 6000,
+          "plaintextSha384": "a25d61d938140e078124621e89d94264380ea11b9a605655b353f95f53e0282907fc86170067a9b3dcfaf5212a5a2a71"
+        },
+        {
+          "sourceType": "d1",
+          "name": "appdb/00-header",
+          "size": 340,
+          "plaintextSha384": "d9faf19b0697e8533bfe0e76d71a21e196d83d6a19343cfa860dbcfe9cd328725415849217a3908292e34d0811519fd3"
+        },
+        {
+          "sourceType": "d1",
+          "name": "appdb/10-rows/000000-customers/000000",
+          "size": 149,
+          "plaintextSha384": "261f7990afe8d84e238525a4755d310a11c5d3b10a68ecee0bbfbfca89a9c20d0541c5e8f8f2ddfba85aeccf8b3e533b"
+        },
+        {
+          "sourceType": "d1",
+          "name": "appdb/10-rows/000000-customers/000001",
+          "size": 128,
+          "plaintextSha384": "4373a069f43502bc8e1be6203f717b7cd80f74aff83945ca1b43bb2ce8658390173103c01c2a9fe15343f406f4827050"
+        },
+        {
+          "sourceType": "d1",
+          "name": "appdb/10-rows/000001-events/000000",
+          "size": 143,
+          "plaintextSha384": "be43646e5171073d3e24bec5c198bc1a14e7272fa472c95643f73ac4d59984d67f4455387e5b5eb442276e5e59ac3a42"
+        },
+        {
+          "sourceType": "d1",
+          "name": "appdb/20-schema",
+          "size": 45,
+          "plaintextSha384": "887cb4f92db7a877bc07499d3bc661e7148bb7fdcaa21aa28274f07776326689fd124e891aa0cc3760803fb3f4b1f6f8"
+        },
+        {
+          "sourceType": "secrets",
+          "name": "API_TOKEN",
+          "size": 37,
+          "plaintextSha384": "01a92ad55433f1c729dffceaa7c1362fcd75d9b7937e1f02d6fc82d2d1b828581d3f665906eaa471688f5928a4f7ff13"
+        },
+        {
+          "sourceType": "cf-config",
+          "name": "zone/example.test/settings",
+          "size": 40,
+          "plaintextSha384": "17ac7e9147397ffc229a893eab84f16032444ba92b947248addfee1094781c892c2e609f693606ed712200edf921cba4"
+        },
+        {
+          "sourceType": "workers",
+          "name": "script/api-worker/content",
+          "size": 58,
+          "plaintextSha384": "969fe510c08e785ca1b57b61503fe63a330de71ecd8f12c2c70062c48006cf77fade057b462b9068c521be9ddda88f39"
+        },
+        {
+          "sourceType": "stream",
+          "name": "video/0001/meta",
+          "size": 30,
+          "plaintextSha384": "f6016c8b48336d41688b54c9dffb02b7022f09b197b02321e34bea916ae7fda46f7300c8ecd141db469cb2b48c4f321f"
+        },
+        {
+          "sourceType": "images",
+          "name": "image/logo/meta",
+          "size": 35,
+          "plaintextSha384": "162355c473d1c30f65cc72799cd9f78271e0f092758cadb5c58cece9ccbb07328ec3c747a36585a640b6563a29b1d863"
+        },
+        {
+          "sourceType": "artifacts",
+          "name": "artifact/build-7/manifest",
+          "size": 21,
+          "plaintextSha384": "2e49277d10ae318689113f581a79bf4366f95d5b0936caad0e5237ce71b894e80f683cd3cab1ed88a6612a9168c2af96"
+        }
+      ]
+    },
+    {
+      "runId": "01K6400000FXTRGEN010000002",
+      "runlogIndex": 2,
+      "prevRunId": "01K6400000FXTRGEN010000001",
+      "latest": true,
+      "sealPath": "sliced",
+      "shards": 2,
+      "records": [
+        {
+          "sourceType": "r2",
+          "name": "archive/a.txt",
+          "size": 27,
+          "plaintextSha384": "5886344fdde348d1b548dcd09bb01b9e78f12d382870c15da42af35a7216d2d2e0438ad37c899e75d99c3e7f349c8cce"
+        },
+        {
+          "sourceType": "r2",
+          "name": "archive/b.txt",
+          "size": 28,
+          "plaintextSha384": "9abe48a0949d082ef6e79f577a8ae1123378674a28db623da18f6b33af36af772e329cc50c81d49bd568545c47c34d55"
+        },
+        {
+          "sourceType": "r2",
+          "name": "archive/c.txt",
+          "size": 27,
+          "plaintextSha384": "33a7f50ad57dcba322de2423af42ffcd318ccc6838fe25df2bf8fef590b1e41b08b2b67a41c2387b0e1d2608c2a30c9c"
+        },
+        {
+          "sourceType": "r2",
+          "name": "archive/large.bin",
+          "size": 12805,
+          "plaintextSha384": "1582b11c48cc4b534d18769c8d62117f3d0525ab68c6ea053ee3bdff8e62734cee956cf714f5c453acb3323f2b2dbd52"
+        }
+      ]
+    }
+  ]
+}

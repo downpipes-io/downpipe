@@ -1,0 +1,2 @@
+go test fuzz v1
+string("Con.\t\t\t\t")
