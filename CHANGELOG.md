@@ -48,9 +48,17 @@ reader that implements their version. It points at
 `https://github.com/downpipes-io/downpipe` for the mapping. `inspect`, `keys --which`
 and the `Open` refusal all carry that same pointer.
 
-## [Unreleased]
+## [0.3.5] - 2026-10-11
 
 Reads format versions: `downpipe/0.1.x`.
+
+### Dependencies
+
+- The ML-DSA library, filippo.io/mldsa, is at 1.0.0. It reads and writes the ML-DSA-87 key and
+  signature bytes that `docs/format/SPEC.md` specifies. The bytes are the same: the frozen ML-DSA-87 key and
+  signature in the conformance tests verify unchanged.
+- The build and release toolchain is Go 1.26.9. It carries the fixes for ten Go standard library
+  advisories in net/http, crypto/tls, net/textproto and os.
 
 ## [0.3.4] - 2026-10-05
 
@@ -459,7 +467,7 @@ First public release of the offline reader, the recovery CLI and the library.
 - `version`, `--version` and `-v` report the build version, injected at release
   time and reported as `dev` for an unstamped local build.
 
-[Unreleased]: https://github.com/downpipes-io/downpipe/compare/v0.3.4...HEAD
+[0.3.5]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.5
 [0.3.4]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.4
 [0.3.3]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.3
 [0.3.2]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.2

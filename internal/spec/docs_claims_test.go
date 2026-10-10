@@ -78,10 +78,8 @@ var skippedDirs = map[string]bool{".git": true, "vendor": true, "node_modules": 
 
 // publishedProse finds every Markdown file this repository ships, rather than trusting a list.
 //
-// THE SCOPE IS DISCOVERED, NOT ENUMERATED. The gate used to read seven named paths, and a claim
-// written anywhere else was simply outside it. Proven against this repository: a new docs/OPERATIONS.md
-// carrying the exact sentence the gate exists to ban passed clean, because nobody had added it to the
-// list. A gate whose scope is a list grows a hole every time the repository grows a file.
+// THE SCOPE IS DISCOVERED, NOT ENUMERATED. The gate walks the tree rather than reading named paths, because a claim
+// written in a file outside a list would be outside the gate. A gate whose scope is a list grows a hole every time the repository grows a file.
 //
 // The archive-embedded RECOVER.md under internal/format/testdata is INCLUDED on purpose. That prose is
 // what an operator reads mid-disaster, it is covered by the signed SHA384SUMS, and a false claim there

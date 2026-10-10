@@ -91,5 +91,4 @@ release:
     recovery/reader path makes no network call.
 
 changelog:
-  use: github
-  sort: asc
+  disable: true

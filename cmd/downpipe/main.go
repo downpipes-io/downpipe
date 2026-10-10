@@ -139,9 +139,9 @@ func run(args []string) int {
 			// reused indices is a chain anomaly, and --allow-stale refuses both. (The genuine
 			// anti-rollback guarantee is what --allow-stale waives, so it is a deliberate, recorded
 			// acknowledgement; see docs/RECOVER.md "Freshness / rollback (exit 5)".)
-			// Gated on the command actually HAVING --allow-stale. The hint used to fire on every exit 5,
-			// so a command without the flag advised an operator to re-run with it, and doing as they were
-			// told produced "flag provided but not defined". Advice that cannot be followed is worse than
+			// Gated on the command actually HAVING --allow-stale. Firing on every exit 5
+			// would advise an operator of a command without the flag to re-run with it, and doing so
+			// would produce "flag provided but not defined". Advice that cannot be followed is worse than
 			// none, because it spends the operator's trust in the next hint the tool gives them.
 			// Also gated on the RUNLOG having been read at all. An absent RUNLOG is an exit 5 by
 			// SPEC.md 8.5, and --allow-stale cannot conjure a file that is not there, so on a wrong

@@ -103,7 +103,7 @@ go build ./cmd/downpipe
 ```
 
 Every dependency is vendored, so that build downloads no module. The one thing it
-needs of the outside world is the toolchain: `go.mod` pins `toolchain go1.26.6`,
+needs of the outside world is the toolchain: `go.mod` pins `toolchain go1.26.9`,
 and under Go's default `GOTOOLCHAIN=auto` a machine whose installed `go` is older
 than the pin fetches that toolchain before it compiles anything. On a disconnected
 machine that download fails, and the build exits 1. Check `go version` against the

@@ -56,10 +56,11 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.26.6" # 1.26.4 was NOT patched against GO-2026-5856 (crypto/tls ECH privacy leak)
+  GO_VERSION: "1.26.9" # 1.26.4 was NOT patched against GO-2026-5856 (crypto/tls ECH privacy leak)
   # and 1.26.5 was NOT patched against GO-2026-6218/6090/6088/5972/5026 (net/url, crypto/tls,
-  # encoding/xml, encoding/asn1, net/http), which govulncheck reports as AFFECTING this code, so
-  # the gating govulncheck job fails on either
+  # encoding/xml, encoding/asn1, net/http), and 1.26.8 is NOT patched against GO-2026-6603, -6604, -6605,
+  # -6607, -6608, -6610, -6611, -6612, -6613 and -6617 (net/http, crypto/tls, net/textproto, os), which govulncheck reports as AFFECTING
+  # this code, so the gating govulncheck job fails on any of them
   GOLANGCI_LINT_VERSION: "v2.12.2" # pinned off @latest for reproducible CI
   GOVULNCHECK_VERSION: "v1.4.0" # pinned off @latest for reproducible CI
 
@@ -71,12 +72,12 @@ jobs:
     # Exercise the patched build toolchain and the declared MSRV floor (go 1.26, the
     # go.mod minimum) so a source build on either can never silently regress. The MSRV
     # row uses GOTOOLCHAIN=local to pin the matrix Go rather than letting go.mod's
-    # `toolchain go1.26.6` directive auto-upgrade it.
+    # `toolchain go1.26.9` directive auto-upgrade it.
     strategy:
       fail-fast: false
       matrix:
         include:
-          - go: "1.26.6" # patched build/release toolchain
+          - go: "1.26.9" # patched build/release toolchain
             gotoolchain: auto
           - go: "1.26" # MSRV floor declared in go.mod
             gotoolchain: local
@@ -94,12 +95,11 @@ jobs:
       # otherwise hide a race-detector failure, and the run would name the smaller problem. The
       # cost when the build is genuinely broken is that go test also fails, which is one extra
       # red step and no lost information.
-      # THIS STEP USED TO READ ITS VERDICT FROM STDOUT ALONE, and both ways that lies were
-      # reproduced. gofmt reports a file it cannot parse or cannot read on STDERR, exits 2, and
-      # prints nothing on stdout, so `test -z "$(gofmt -l .)"` saw an empty string and passed on
-      # a file gofmt had never read. The same line also passed on a checkout holding no Go files
-      # at all. The status is captured now, and the count of what was walked has a floor, so this
-      # step cannot report a formatting verdict it did not reach.
+      # This step does not read its verdict from stdout alone. gofmt reports a file it cannot parse
+      # or cannot read on STDERR, exits 2, and prints nothing on stdout, so `test -z "$(gofmt -l .)"`
+      # would see an empty string and pass on a file gofmt had never read. The same line would also
+      # pass on a checkout holding no Go files at all. The step captures the exit status, and the
+      # count of what was walked has a floor, so it cannot report a formatting verdict it did not reach.
       - name: gofmt (fail on any unformatted file)
         if: ${{ !cancelled() }}
         run: |
@@ -250,6 +250,15 @@ jobs:
       - name: lint announcement self-test
         if: ${{ !cancelled() }}
         run: ./scripts/lint-announce.sh --self-test
+      # The release-shape check release.yml runs once it attaches the provenance to the draft release. It is
+      # graded here because release.yml runs only for a tag. It reads saved release JSON and .goreleaser.yaml,
+      # so it needs no token and no network, and the runner image ships jq.
+      - name: release tag ancestry self-test
+        if: ${{ !cancelled() }}
+        run: make lint-tag-on-main
+      - name: release shape check self-test
+        if: ${{ !cancelled() }}
+        run: make release-shape-test
 
   govulncheck:
     name: Vulnerabilities

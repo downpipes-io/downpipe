@@ -315,10 +315,10 @@ requires a minor bump (section 13). There is no scrypt, no ChaCha20-Poly1305,
 no X25519-only wrap and no SHA-256 in `downpipe/0.1.0`.
 
 Implementation note on the ML-DSA dependency. The Go reference reader
-takes ML-DSA-87 from the vendored `filippo.io/mldsa` module, pinned by hash in
-`go.sum` to an untagged pseudo-version (there is no upstream tagged release yet).
-The repository vendors the pinned commit under `vendor/`, so a reader build does not
-depend on the commit remaining reachable upstream. Run outside the Go standard-library
+takes ML-DSA-87 from the vendored `filippo.io/mldsa` module, pinned exactly to the
+tagged release `v1.0.0` in `go.mod` and by hash in `go.sum`.
+The repository vendors that release under `vendor/`, so a reader build does not
+depend on the release remaining reachable upstream. Run outside the Go standard-library
 FIPS boundary, the vendored module's FIPS-140 pairwise consistency test on key generation and its
 algorithm self-test are no-ops, so a key produced by a faulty RNG or CPU path is
 not caught by a generation-time self-test. This does not weaken the ML-DSA-87
@@ -1641,9 +1641,9 @@ capsule, the freshness anchor and the signed recovery bundle. Reading it needs a
 conformant reader of the downpipe `.dpe`/`.seg` format, which is the open-source MIT
 downpipe project (the offline tool, this specification and the conformance vectors),
 kept by the recoverer or re-implemented clean-room; no vendor and no Cloudflare are
-involved. Shipping the verbatim specification and a buildable reader INSIDE the
-bundle, so the bucket is self-sufficient with no external copy at all, is a planned
-strengthening of this section, gated on a per-writer embed strategy.
+involved. The bucket does not carry the verbatim specification or a buildable reader inside
+it. The bucket is not self-sufficient on its own: recovering it depends on a
+conformant reader kept separately, as described above.
 
 ### 9.1 Bundled signer public key
 

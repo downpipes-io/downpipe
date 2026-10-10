@@ -369,9 +369,9 @@ func parseAzureSASToken(raw string, now time.Time) (string, error) {
 // malformed token rather than a shape we have not met: see ErrAzureSASBadExpiry for why that is
 // refused rather than demoted to "no expiry".
 var azureSASExpiryLayouts = []string{
-	time.RFC3339,
-	"2006-01-02T15:04Z07:00",
-	"2006-01-02",
+	time.RFC3339,             // full instant, to the second
+	"2006-01-02T15:04Z07:00", // to the minute, no seconds
+	"2006-01-02",             // date only
 }
 
 // parseAzureSASExpiry reads the `se` parameter as an instant, reporting whether any known layout

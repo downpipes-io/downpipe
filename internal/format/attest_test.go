@@ -126,11 +126,9 @@ func TestAttestFailsOnStaleRunWhenSignerPinned(t *testing.T) {
 // bytes. The pass is paid for by the labels asserted below -- SignerPinned false and
 // RunlogVerified false -- so a caller cannot read this result as a freshness verdict.
 //
-// The name used to say WithAllowStale. Attest takes no such option and never has: its
-// arguments are the store, the run, an optional signer and a pin. A test name that puts the
-// age word on a path that does not have it is how the reader of the next change concludes the
-// word reaches further than it does, which is the whole shape --allow-stale was just split
-// out of.
+// Attest takes no allow-stale option: its arguments are the store, the run, an optional signer
+// and a pin. A test name that puts the age word on a path that does not have it would lead a
+// reader to conclude the word reaches further than it does.
 func TestAKeylessAttestPassesOnASupersededRun(t *testing.T) {
 	store := memStore{}
 	_ = buildStaleArchive(t, store, "dp_attest")

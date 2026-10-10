@@ -1,6 +1,4 @@
-// Package mldsacrypto is a stand-in for the standard library's crypto package,
-// until MLDSAMu is added there, at which point this package will become a
-// wrapper.
+// Package mldsacrypto is a stand-in for the standard library's crypto package.
 package mldsacrypto
 
 import "crypto"
@@ -10,4 +8,4 @@ import "crypto"
 // value for [mldsa.PrivateKey.Sign].
 //
 // [pre-hashed μ message representative]: https://www.rfc-editor.org/rfc/rfc9881.html#externalmu
-const MLDSAMu crypto.Hash = 0xABCDEF12
+const MLDSAMu crypto.Hash = 20

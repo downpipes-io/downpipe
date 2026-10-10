@@ -175,18 +175,16 @@ func TestCmdKeysWhichSkipsRunWithForgedRootSignature(t *testing.T) {
 
 	// THE SKIP HAS TO REACH STDOUT, AND IT HAS TO REACH THE EXIT CODE.
 	//
-	// This test used to assert `code != 0 -> fatal`, with the comment "the command still
-	// succeeds overall; only the one forged run is excluded". Driven, that meant the entire
-	// stdout of a `keys --which --signer` over an archive whose only root had been forged
-	// was one line:
+	// Without this, `keys --which --signer` over an archive whose only root had been forged
+	// would print one line:
 	//
 	//     0 run(s) across 0 recipient identit(ies) [signer-verified]:
 	//
-	// at exit 0. The word "verified" next to a count of nothing, and with stderr dropped by
-	// a pipe or a log capture there was no trace a run had ever existed. Excluding a forged
-	// run from the index is right; presenting the remainder as a verified answer is not, and
-	// this same command already fails closed (ExitStale) on a forged RUNLOG signature, so a
-	// forged ROOT exiting 0 was the one hole in that posture.
+	// at exit 0. The word "verified" would sit next to a count of nothing, and with stderr
+	// dropped by a pipe or a log capture there would be no trace a run had ever existed.
+	// Excluding a forged run from the index is right; presenting the remainder as a verified
+	// answer is not. This command already fails closed (ExitStale) on a forged RUNLOG
+	// signature, and a forged ROOT must not exit 0 either.
 	if !strings.Contains(stdout, "INCOMPLETE") {
 		t.Errorf("the summary tag must not read as a clean signer-verified index when a run was skipped:\n%s", stdout)
 	}

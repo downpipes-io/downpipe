@@ -295,7 +295,7 @@ The hybrid KEM combiner binds the X25519 ephemeral share and the recipient's
 public key into the shared secret (SPEC.md 4.2) and is pinned by a known-answer
 vector, so a second implementation reproduces it byte for byte. The envelope is
 not an `age` file and is interoperable with nothing off the shelf, which is why
-recovery is delivered by a documented, audited reader of the downpipe format
+recovery is delivered by a documented reader of the downpipe format
 rather than a third-party tool.
 
 ## Conformance
@@ -359,7 +359,7 @@ Every dependency this reader needs, including the post-quantum signature module
 (`filippo.io/mldsa`), is vendored into `./vendor`. The reader therefore builds,
 tests and runs from the checked-out source with no module download, and with no
 network access at all provided the machine's own Go already satisfies the
-`toolchain go1.26.6` pin in `go.mod`. That is what underpins the offline-recovery
+`toolchain go1.26.9` pin in `go.mod`. That is what underpins the offline-recovery
 promise above: if the vendor and Cloudflare are both gone, you can still rebuild
 the recovery tool from this repository alone.
 
@@ -370,7 +370,7 @@ go test  -mod=vendor ./...
 
 The toolchain pin is the one thing the checked-out source cannot supply. Under
 Go's default `GOTOOLCHAIN=auto`, a machine whose installed `go` is older than the
-pin, and whose module cache does not already hold `go1.26.6`, fetches that
+pin, and whose module cache does not already hold `go1.26.9`, fetches that
 toolchain from the module proxy before it compiles anything; with no proxy
 reachable the build exits 1 with `toolchain not available` rather than quietly
 falling back to the older Go. Driven against a clean module cache
@@ -378,7 +378,7 @@ with `GOPROXY=off` on a machine running go1.26.1: `GOTOOLCHAIN=auto` exits 1,
 `GOTOOLCHAIN=local` exits 0 and the binary reports `downpipe dev`, and the same
 `auto` build exits 0 against a cache that already holds the pinned toolchain,
 which is why a machine that has built this repository before will not show the
-gap. `GOTOOLCHAIN=local` gives up the pin's security-patch guarantee, so keep a
+gap. `GOTOOLCHAIN=local` gives up the security fixes the pinned toolchain carries, so keep a
 `go` meeting the pin alongside the source rather than reaching for `local` during
 a recovery.
 

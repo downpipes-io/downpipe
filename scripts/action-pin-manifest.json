@@ -15,6 +15,7 @@
     "actions/attest-build-provenance": "4.2.2",
     "actions/checkout": "6.0.2",
     "actions/dependency-review-action": "5.0.0",
+    "actions/download-artifact": "8.0.1",
     "actions/setup-go": "5.6.0",
     "actions/setup-node": "4.4.0",
     "actions/upload-artifact": "7.0.1",

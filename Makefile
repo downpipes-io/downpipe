@@ -1,4 +1,4 @@
-.PHONY: build dist sbom test fmt vet lint lint-announce-test lint-action-pins lint-action-pins-test lint-verdict-guard cover cover-gate memcheck mutation-crypto mutation-format tidy clean schema-validate schema-validate-selftest
+.PHONY: build dist sbom test fmt vet lint lint-announce-test lint-action-pins lint-action-pins-test lint-verdict-guard cover cover-gate memcheck mutation-crypto mutation-format tidy clean schema-validate schema-validate-selftest release-shape-test
 
 # VERSION is injected into main.version. A tagged build stamps the tag; otherwise
 # the short commit (with -dirty), falling back to "dev" outside a git checkout.
@@ -41,7 +41,7 @@ vet:
 # themselves in the output, so an exclusion is read on every run rather than once in a diff. The script
 # resolves the linter from GOLANGCI_LINT_CMD, then GOLANGCI_LINT_VERSION (the pinned `go run` invocation
 # CI uses), then the binary on PATH, and it prints which one it resolved to.
-lint: lint-announce-test
+lint: lint-announce-test lint-tag-on-main
 	./scripts/lint-announce.sh
 
 # lint-announce-test drives the announcement end to end with a stub linter over recorded verbose output,
@@ -49,6 +49,11 @@ lint: lint-announce-test
 # announcement that has stopped announcing reads exactly like a clean run.
 lint-announce-test:
 	./scripts/lint-announce.sh --self-test
+
+# lint-tag-on-main drives the release tag-ancestry check over throwaway repositories: a tag on a main
+# commit is accepted and a tag on a commit that is not on main is refused. It needs only git.
+lint-tag-on-main:
+	bash scripts/verify-tag-on-main.sh --self-test
 
 # lint-action-pins-test runs the pin gate's own attack and vacuity cases offline: no token, no network,
 # nothing outside node: builtins, so it costs nothing and runs anywhere. This is the half you can run
@@ -79,6 +84,16 @@ lint-action-pins: lint-action-pins-test
 # their own verdicts, so there is no point at which this repository's code could declare one.
 lint-verdict-guard:
 	node scripts/verdict-guard-gate.mjs
+
+# release-shape-test runs scripts/release-shape.sh over the split release shape in
+# scripts/testdata/release-shape (a draft without the provenance and a published release holding only the
+# provenance, for one tag) and over variants of it built in place: one draft with every file passes, and a
+# missing archive, an extra file, a published release, a partial upload and a provenance digest that differs
+# each fail. It also checks that the names derived from .goreleaser.yaml are the files of that real release.
+# release.yml runs the same script for a tag, after it attaches the provenance to the draft release. Needs
+# jq, no token and no network.
+release-shape-test:
+	./scripts/release-shape.sh --self-test
 
 cover:
 	go test -race -shuffle=on -coverpkg=./... -coverprofile=coverage.out ./...

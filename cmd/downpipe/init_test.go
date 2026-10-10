@@ -182,12 +182,11 @@ func TestInitExecuteErrorIsExitError(t *testing.T) {
 }
 
 // TestInitPlanStatesTheTokenAndKeyCustodyTheEngineHas pins the runbook to what the engine does
-// (engine/docs/CLOUDFLARE-PERMISSIONS.md). The plan used to say that the running engine holds no
-// Cloudflare API token, that the token never goes to the console, and that the signer private and
-// recipient public live in the Secrets Store. Each is false. The engine can store the optional
-// read-only discovery token. A console action that changes the engine's Worker takes the deploy
-// token as a one-time paste. The engine's keys are Worker secrets. Each old sentence is refused here
-// and each true one is required, so a revert fails in both directions.
+// The plan states that the engine can store the optional read-only discovery token, that a console
+// action that changes the engine's Worker takes the deploy token as a one-time paste, and that the
+// engine's keys are Worker secrets. The test refuses the false forms of each sentence (no stored
+// token, a token that never goes to the console, keys in the Secrets Store) and requires the true
+// ones, so a revert fails in both directions.
 func TestInitPlanStatesTheTokenAndKeyCustodyTheEngineHas(t *testing.T) {
 	plan := initPlan("eng.example.com", "con.example.com", "example.com", "archives")
 	for _, gone := range []string{
@@ -218,10 +217,9 @@ func TestInitPlanStatesTheTokenAndKeyCustodyTheEngineHas(t *testing.T) {
 
 // assertTokenStepOrder checks the deploy-token step of a printed runbook. The line that introduces
 // the export lines ends in a colon and scopes the on-machine rule to a wrangler deploy, and the
-// console one-time paste is stated after the exports. The update runbook used to end the console
-// sentence in the colon that introduces the exports, so the shell exports read as the console
-// route. The init runbook kept "put it in this deploy session ONLY" next to the console paste,
-// while engine docs/CLOUDFLARE-PERMISSIONS.md scopes that rule to a wrangler deploy.
+// console one-time paste is stated after the exports. The sentence about the console must not end
+// in the colon that introduces the exports, or the shell exports read as the console route. The
+// "put it in this deploy session ONLY" rule applies to a wrangler deploy, not to the console paste.
 func assertTokenStepOrder(t *testing.T, name, plan string) {
 	t.Helper()
 	lines := strings.Split(plan, "\n")

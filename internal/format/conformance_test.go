@@ -123,7 +123,7 @@ type vectorRecord struct {
 // under testdata/vectors before it will call the corpus non-vacuous. This mechanism does
 // nearly all the real cross-implementation work behind the "held to agreement" claim
 // (MOAT.7), and a corpus that silently shrank — one directory deleted, its
-// docs/CONFORMANCE.md entry left in place — would otherwise pass invisibly: Go's testing
+// conformance entry left in place — would otherwise pass invisibly: Go's testing
 // package makes an empty t.Run table indistinguishable from a full one that all passed.
 // Add a new vector's name here in the SAME change that adds the vector; this list is a
 // floor, not a mirror, so a forgotten addition only fails to raise the floor, it never

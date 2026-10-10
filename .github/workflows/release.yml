@@ -6,6 +6,8 @@
 # multi-platform binaries with a checksums file, a CycloneDX SBOM, and a keyless cosign
 # attestation of the checksums, and open a DRAFT release the maintainer reviews and
 # publishes. CI (ci.yml) keeps gating every push/PR; this only runs for tags.
+# The SLSA provenance goes on that same draft by release id (attach-provenance), and that job fails
+# unless the tag then has exactly one release, still a draft, holding exactly the expected files.
 name: Release
 
 on:
@@ -23,7 +25,7 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.26.6"
+  GO_VERSION: "1.26.9"
   GOVULNCHECK_VERSION: "v1.4.0" # pinned off @latest for reproducible releases
   CYCLONEDX_GOMOD_VERSION: "v1.10.0" # pinned off @latest for reproducible releases
 
@@ -58,6 +60,15 @@ jobs:
           fi
           git -c gpg.ssh.allowedSignersFile="${RUNNER_TEMP}/allowed_signers" verify-tag "$TAG"
           echo "tag $TAG verified against the main-branch signer roster"
+      - name: Tag commit must be on main
+        # The script and its guard library are read from origin/main, never the tag's own tree, for the
+        # same reason as the roster above. It refuses a signed tag whose commit is not an ancestor of
+        # origin/main (for example a pull request head), so only a commit on main can build a release.
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/tagcheck"
+          git archive origin/main scripts/verify-tag-on-main.sh scripts/lib/verdict-guard.sh | tar -x -C "${RUNNER_TEMP}/tagcheck"
+          bash "${RUNNER_TEMP}/tagcheck/scripts/verify-tag-on-main.sh" "${GITHUB_REF_NAME}"
 
   release:
     name: Build, attest & draft release
@@ -143,11 +154,85 @@ jobs:
     permissions:
       actions: read # to read the workflow path
       id-token: write # to sign the provenance
-      contents: write # to attach the provenance to the draft release
+      # The generator's own upload job declares contents: write, and a called workflow cannot declare more
+      # than its caller grants, so this stays write although that job does not run here.
+      contents: write # declared by the generator's upload job, which upload-assets false skips
     # PINNING EXCEPTION (recorded): the SLSA generator must be pinned by TAG, not commit SHA; the
     # slsa-verifier refuses provenance minted from a SHA-pinned generator ref.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
     with:
       base64-subjects: ${{ needs.release.outputs.hashes }}
-      upload-assets: true # attach to the draft release GoReleaser created for this tag
+      # false, because the generator's upload step does not find a draft by its tag: given true, it publishes
+      # a second release for the tag holding only the provenance, beside the GoReleaser draft that holds
+      # everything else. The attach-provenance job below puts the provenance on that draft by release id.
+      upload-assets: false
       provenance-name: downpipe.intoto.jsonl
+
+  attach-provenance:
+    name: Attach provenance to the draft release
+    needs: [release, provenance]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # list releases with drafts included, and upload the provenance to the draft
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with: { egress-policy: audit }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      # The generator uploads the signed provenance as a workflow artefact named by its provenance-name
+      # output, whatever upload-assets says.
+      - name: Download the signed provenance
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.provenance.outputs.provenance-name }}
+          path: ${{ runner.temp }}/provenance
+      # By release id, never by tag: a lookup by tag does not return a draft, which is how an upload by tag
+      # lands on a second release. scripts/release-shape.sh draft-id fails unless the tag has exactly one
+      # release, drafts included, and that release is a draft. A provenance file already on the draft with
+      # this digest is left as it is, so a re-run of this job does not fail on its own upload; one with
+      # another digest fails.
+      - name: Attach the provenance to the GoReleaser draft by release id
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PROVENANCE_NAME: ${{ needs.provenance.outputs.provenance-name }}
+        run: |
+          set -euo pipefail
+          file="${RUNNER_TEMP}/provenance/${PROVENANCE_NAME}"
+          if [ ! -s "$file" ]; then
+            echo "::error::the generator's artefact holds no ${PROVENANCE_NAME}"
+            exit 1
+          fi
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" | jq -s 'add // []' > "${RUNNER_TEMP}/releases-before.json"
+          ./scripts/release-shape.sh draft-id --tag "$TAG" --releases "${RUNNER_TEMP}/releases-before.json" --write-id "${RUNNER_TEMP}/draft-id"
+          id="$(cat "${RUNNER_TEMP}/draft-id")"
+          local_digest="sha256:$(sha256sum "$file" | cut -d' ' -f1)"
+          attached="$(jq -r --argjson id "$id" --arg name "$PROVENANCE_NAME" \
+            '.[] | select(.id == $id) | .assets[] | select(.name == $name) | (.digest // "none")' \
+            "${RUNNER_TEMP}/releases-before.json")"
+          if [ -z "$attached" ]; then
+            gh api --method POST -H "Content-Type: application/octet-stream" \
+              "https://uploads.github.com/repos/${GITHUB_REPOSITORY}/releases/${id}/assets?name=${PROVENANCE_NAME}" \
+              --input "$file" > "${RUNNER_TEMP}/upload.json"
+            echo "uploaded ${PROVENANCE_NAME} to draft release ${id}: $(jq -r '.digest // "the API returned no digest"' "${RUNNER_TEMP}/upload.json")"
+          elif [ "$attached" = "$local_digest" ]; then
+            echo "draft release ${id} already holds ${PROVENANCE_NAME} with digest ${local_digest}"
+          else
+            echo "::error::draft release ${id} already holds a ${PROVENANCE_NAME} with digest ${attached}, not this run's ${local_digest}"
+            exit 1
+          fi
+      # Read every release back and check the shape: exactly one release for the tag, still a draft, holding
+      # exactly the expected files (derived from .goreleaser.yaml), and the provenance on it carrying the
+      # digest of the file this run downloaded. The draft is left as a draft for the maintainer to publish.
+      - name: Check the draft holds exactly the release files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PROVENANCE_NAME: ${{ needs.provenance.outputs.provenance-name }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" | jq -s 'add // []' > "${RUNNER_TEMP}/releases-after.json"
+          ./scripts/release-shape.sh check --tag "$TAG" --releases "${RUNNER_TEMP}/releases-after.json" \
+            --state draft --provenance "${RUNNER_TEMP}/provenance/${PROVENANCE_NAME}"

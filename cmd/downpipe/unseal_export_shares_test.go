@@ -28,8 +28,6 @@ import (
 // against artefacts the console itself produced rather than a Go-side re-implementation of a share file.
 // The test recovers the inner export from three of the four shares and requires it to equal both the
 // expected inner AND the bytes the --identity route recovers from the same sealed file.
-//
-//
 
 const splitFixtureDir = "testdata/sealed-export-split"
 

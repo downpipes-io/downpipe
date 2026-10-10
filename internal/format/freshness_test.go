@@ -12,11 +12,8 @@ import (
 // An absent or unreadable RUNLOG is a freshness failure (exit 5) in verified mode, and
 // --allow-unverified-runlog proceeds despite it while --allow-stale does NOT.
 //
-// This assertion used to read "--allow-stale proceeds despite the absent RUNLOG", which is the
-// conflation the split removes: the flag is an age word, and an absent RUNLOG measures no age. It
-// is one of only two places in the whole suite that encoded the old behaviour, and both were about
-// an absent log. Nothing asserted that --allow-stale opened an archive whose RUNLOG SIGNATURE did
-// not verify, which is the worse half of what it waived and the half no test could see.
+// --allow-stale is an age word, and an absent RUNLOG measures no age, so the flag does not waive
+// this failure. Only --allow-unverified-runlog does.
 func TestFreshnessMissingRunlogRejected(t *testing.T) {
 	const runID = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
 	store := memStore{}
