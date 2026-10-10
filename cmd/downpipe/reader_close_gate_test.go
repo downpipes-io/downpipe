@@ -34,16 +34,13 @@ import (
 //     `defer r.Close()` was further down the same file and bound the same name. That is exactly the
 //     "sixth command added next month" this gate exists for.
 //   - A pattern over text cannot tell code from a comment. Replacing verify.go's `defer r.Close()` with
-//     the line `// TODO: reinstate r.Close() once the shared teardown lands` left verify genuinely holding
-//     the master for the life of the process, and the gate stayed green because the identifier was still
-//     in the bytes.
+//     a line that only mentions r.Close() would leave verify genuinely holding the master for the life
+//     of the process, and the gate would stay green because the identifier was still in the bytes.
 //
 // The parser closes both by construction. Accounting is TOTAL: every call to format.Open, StreamOpen or
 // StreamOpenContext must bind its reader to a plain identifier this test can follow, and one that does not
 // fails the test naming the position, rather than falling out of a no-match branch and being counted as
 // absent.
-//
-//
 
 // The constructors that hand back a reader holding a live run master.
 var runOpeners = map[string]bool{"Open": true, "StreamOpen": true, "StreamOpenContext": true}

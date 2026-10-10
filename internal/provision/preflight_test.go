@@ -153,10 +153,9 @@ func TestPreflightHealthyAccount(t *testing.T) {
 }
 
 // TestPreflightSecretsStoreFreeSlotCountNeverFailsThePreflight pins the Secrets Store check to
-// what a deploy uses. The check used to fail with fewer than six free slots and said the engine
-// needs roughly five. The engine's keys are Worker secrets and a deploy adds no secret to the
-// store, so that failure stopped a `preflight && deploy` script for a reason the deploy did not
-// have. A full store is still named, with a note that says when it matters, and nothing here
+// what a deploy uses. The engine's keys are Worker secrets and a deploy adds no secret to the
+// store, so the free slot count never fails the preflight, because a failure would stop a
+// `preflight && deploy` script for a reason the deploy does not have. A full store is still named, with a note that says when it matters, and nothing here
 // says the engine needs Secrets Store slots. A store the token cannot read is a different case,
 // which TestPreflightUnreadableSecretsStoreSaysWhatTheSlotsAreFor covers.
 func TestPreflightSecretsStoreFreeSlotCountNeverFailsThePreflight(t *testing.T) {
@@ -216,7 +215,7 @@ func TestPreflightNoSecretsStoreIsUnconfigured(t *testing.T) {
 		t.Fatalf("the no-store state must carry a non-empty remediation: %+v", got)
 	}
 	// The engine's keys are Worker secrets, so an account with no store needs nothing for a
-	// deploy. The remediation used to say the engine needs roughly five store secrets.
+	// deploy.
 	if strings.Contains(got.Remediation, "roughly five") || !strings.Contains(got.Remediation, "Worker secrets") {
 		t.Fatalf("the no-store remediation must say the engine keeps its keys as Worker secrets: %+v", got)
 	}
@@ -224,9 +223,8 @@ func TestPreflightNoSecretsStoreIsUnconfigured(t *testing.T) {
 
 // TestPreflightUnreadableSecretsStoreSaysWhatTheSlotsAreFor covers a 403 on the store list and
 // a 403 on the secret count. Each stays an unanswered check, as for every other check the token
-// cannot read, so a `preflight && deploy` script still stops on it. The remediation used to ask
-// for the read scope "to check headroom" with no reason. The engine deploy adds no secret to the
-// store, so the remediation now says what the free slots are for, and the operator can decide if
+// cannot read, so a `preflight && deploy` script still stops on it. The engine deploy adds no secret to the
+// store, so the remediation says what the free slots are for, and the operator can decide if
 // the missing scope matters before widening the token.
 func TestPreflightUnreadableSecretsStoreSaysWhatTheSlotsAreFor(t *testing.T) {
 	for name, prefix := range map[string]string{

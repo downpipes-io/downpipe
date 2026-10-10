@@ -24,8 +24,6 @@
 #
 # Written as `== false` rather than `!`: on a non-pull_request event github.event.repository can be
 # absent, and `== false` on a null skips, where `!null` would run.
-#
-#
 name: Dependency Review
 
 on:

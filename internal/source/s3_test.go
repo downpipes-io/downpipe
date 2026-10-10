@@ -209,12 +209,9 @@ func TestS3StoreNon200Statuses(t *testing.T) {
 // (TestS3StoreContentLengthBoundary) and exercises the io.ReadAll path that actually
 // reads body bytes.
 //
-// WHY THE LIMIT IS INJECTED. This test used to stream the real 2 GiB ceiling through the
-// test server and buffer it. That is what killed CI: every Build & Test leg and the
-// coverage job died with SIGTERM at this package, deterministically, after the packages
-// before it had passed. It survived locally, where there is far more memory than a hosted
-// runner has, so main had been red on every run since June while the suite looked healthy
-// on a developer machine. A small injected ceiling drives the identical code path, which
+// WHY THE LIMIT IS INJECTED. Streaming the real 2 GiB ceiling through the
+// test server and buffering it exhausts the memory of a hosted runner and ends the process
+// with SIGTERM, while passing on a machine with more memory. A small injected ceiling drives the identical code path, which
 // is the same trade DirStore.maxBytes already makes for the same guard.
 func TestS3StoreBodyOversize(t *testing.T) {
 	// A ceiling small enough to be free and large enough to span several chunk writes,

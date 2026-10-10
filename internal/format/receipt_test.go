@@ -193,12 +193,9 @@ func TestBuildReceiptNormativeFields(t *testing.T) {
 	}
 	// AN UNSUPPLIED COUNT IS ABSENT, NOT ZERO.
 	//
-	// This assertion used to read "must be zero when not supplied", and it passed for the
-	// whole life of the field precisely because it could not tell the two apart: the input
-	// it called "not supplied" was written as VanishedExcluded: 0, which is the same value
-	// a caller that HAD measured zero would pass. Nothing in production ever supplied
-	// either field, so every signed receipt the tool emitted asserted 0 for two quantities
-	// no code had looked at, and this test agreed with it.
+	// A zero would be indistinguishable from a caller that HAD measured zero. A receipt that
+	// asserted 0 for a quantity no code had looked at would be a false statement, so a field
+	// nothing measured must be nil, and the receipt omits it.
 	if rcpt2.VanishedExcluded != nil {
 		t.Errorf("vanishedExcluded: want absent when nothing measured it, got %d", *rcpt2.VanishedExcluded)
 	}

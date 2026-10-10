@@ -41,8 +41,6 @@ import (
 // package still resolves to the same package. Accounting is TOTAL: every flag registration must yield a
 // name this test can read, and one that does not fails the test naming the position, rather than falling
 // out of a no-match branch and being counted as absent.
-//
-//
 
 // Pinned rather than derived. A new command that decrypts has to be added here consciously, which is the
 // moment to ask whether it registered the shared flags. Deriving the list from the files would make the

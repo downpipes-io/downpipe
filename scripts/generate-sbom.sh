@@ -14,8 +14,8 @@
 # modify any files other than sbom.cdx.json.
 #
 # See engine/docs/security/sbom.md for the dependency inventory.
-# The Go modules (golang.org/x/crypto v0.52.0 and filippo.io/mldsa
-# v0.0.0-20260215214346-43d0283efc3e) are exactly pinned in go.mod and
+# The Go modules (golang.org/x/crypto v0.57.0 and filippo.io/mldsa
+# v1.0.0) are exactly pinned in go.mod and
 # hash-verified in go.sum; the caret-range concern documented for the
 # TypeScript repos does not apply here.
 

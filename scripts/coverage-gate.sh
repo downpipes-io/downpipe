@@ -33,8 +33,8 @@ if [[ "${1:-}" == "--self-test" ]]; then
   verdict_guard_cleanup() { rm -rf "$bed"; }
   mod="$(go list -m)"
   fails=0
-  # Counted at the assertion rather than written into the summary line. It used to say "14 assertions
-  # passed" as a literal, so deleting an assertion left the line claiming a number the run no longer did.
+  # Counted at the assertion rather than written into the summary line as a literal, so deleting an
+  # assertion cannot leave the line claiming a number the run did not reach.
   checked=0
   check() { # check <description> <haystack> <needle> <want-present:0|1>
     local desc="$1" hay="$2" needle="$3" want="$4" got=0

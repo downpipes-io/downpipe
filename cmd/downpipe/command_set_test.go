@@ -25,8 +25,6 @@ import (
 //
 // Adding a command should fail this test. That is the point, not an inconvenience: the fix is one line
 // here and one row plus a count in the docs, and doing both is what keeps the page true.
-//
-//
 
 // The fifteen subcommands, as the docs' table describes them.
 var wantSubcommands = []string{

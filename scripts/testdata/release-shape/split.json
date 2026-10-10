@@ -1,0 +1,125 @@
+[
+  {
+    "id": 403509659,
+    "tag_name": "v0.3.4",
+    "name": "v0.3.4",
+    "draft": true,
+    "prerelease": false,
+    "assets": [
+      {
+        "id": 611958917,
+        "name": "checksums.txt",
+        "size": 1254,
+        "state": "uploaded",
+        "digest": "sha256:4fe6bb3461a2232d4b6993c2da7aa154965c14a4776371debe76300267a98975"
+      },
+      {
+        "id": 611958924,
+        "name": "checksums.txt.cosign-bundle",
+        "size": 10431,
+        "state": "uploaded",
+        "digest": "sha256:108c02e9933583808fe499d909c21368789e8bf1d1d72a01500aaa43a5b19f63"
+      },
+      {
+        "id": 611958837,
+        "name": "downpipe_0.3.4_darwin_amd64.tar.gz",
+        "size": 3425822,
+        "state": "uploaded",
+        "digest": "sha256:1203227439e75434b12d63f6215611cd1c2416e4e6989addf8eb94e02d07b86c"
+      },
+      {
+        "id": 611958895,
+        "name": "downpipe_0.3.4_darwin_amd64.tar.gz.cdx.json",
+        "size": 4020,
+        "state": "uploaded",
+        "digest": "sha256:22a352410f1ad397e159b1d82c94d46023089647c8cfd7cb483b10be4ffc9efd"
+      },
+      {
+        "id": 611958840,
+        "name": "downpipe_0.3.4_darwin_arm64.tar.gz",
+        "size": 3171105,
+        "state": "uploaded",
+        "digest": "sha256:04799c3eb27eb37dcb70dc6559711dfc1dfa4769f3fa172781915aa4722a76a7"
+      },
+      {
+        "id": 611958870,
+        "name": "downpipe_0.3.4_darwin_arm64.tar.gz.cdx.json",
+        "size": 4020,
+        "state": "uploaded",
+        "digest": "sha256:69236678b67031f77223bbf92aa68fafd372b7f6468aea02fa0b0b7f62d669c6"
+      },
+      {
+        "id": 611958839,
+        "name": "downpipe_0.3.4_linux_amd64.tar.gz",
+        "size": 3380312,
+        "state": "uploaded",
+        "digest": "sha256:61a82afa759b5e4c0edab0041361e151c50d37c00f96cfa65634aece14369e06"
+      },
+      {
+        "id": 611958902,
+        "name": "downpipe_0.3.4_linux_amd64.tar.gz.cdx.json",
+        "size": 4020,
+        "state": "uploaded",
+        "digest": "sha256:003aabfda8903ff9117c400716a34a942c0d37a8749d0df605858a8c37d48637"
+      },
+      {
+        "id": 611958838,
+        "name": "downpipe_0.3.4_linux_arm64.tar.gz",
+        "size": 3064600,
+        "state": "uploaded",
+        "digest": "sha256:17caa23ce37caba1a6619ad90005e0e5773bee71cbd0bb8b0dc79297443dbe84"
+      },
+      {
+        "id": 611958871,
+        "name": "downpipe_0.3.4_linux_arm64.tar.gz.cdx.json",
+        "size": 4020,
+        "state": "uploaded",
+        "digest": "sha256:4007dd35414fd6657f37532d148ecb9880fecb69ca430ce06d7d557d2d273065"
+      },
+      {
+        "id": 611958869,
+        "name": "downpipe_0.3.4_windows_amd64.zip",
+        "size": 3465219,
+        "state": "uploaded",
+        "digest": "sha256:8f8ba1e3b9a081d914a3c4f11f326da9aeb4bdce781bc663a4fac5719523561a"
+      },
+      {
+        "id": 611958911,
+        "name": "downpipe_0.3.4_windows_amd64.zip.cdx.json",
+        "size": 4020,
+        "state": "uploaded",
+        "digest": "sha256:ef8c8fa9eb61fe220e2d54ef1062a00ad576068de9679e41971d3a3ae74f9164"
+      },
+      {
+        "id": 611958868,
+        "name": "downpipe_0.3.4_windows_arm64.zip",
+        "size": 3109238,
+        "state": "uploaded",
+        "digest": "sha256:d8cdc8cf2d4267247f6468fb4b1c145b98fec34c10aa13479ed0408b28957bfb"
+      },
+      {
+        "id": 611958908,
+        "name": "downpipe_0.3.4_windows_arm64.zip.cdx.json",
+        "size": 4020,
+        "state": "uploaded",
+        "digest": "sha256:77c3142f340e0e7e00fed4f2396d5f470913698a9519db057325ba906671d13b"
+      }
+    ]
+  },
+  {
+    "id": 403510166,
+    "tag_name": "v0.3.4",
+    "name": "v0.3.4",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "id": 611960474,
+        "name": "downpipe.intoto.jsonl",
+        "size": 24895,
+        "state": "uploaded",
+        "digest": "sha256:b2fd68c186f4fb5fa63c22cd781aa364cc72ef330194ca69c9792498fee54e06"
+      }
+    ]
+  }
+]

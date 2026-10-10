@@ -3,6 +3,7 @@ package spec
 import (
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/importer"
 	"go/parser"
 	"go/token"
@@ -98,15 +99,28 @@ type censusResult struct {
 	bothConstant map[string]int
 	oneConstant  int
 	importErrors int
+	notBuilt     int
 }
 
 // runConstAssertionCensus type-checks every package in the module and answers, for every comparison in
 // assertion position, whether the compiler holds BOTH operands to be constant.
+//
+// A PACKAGE IS THE FILES THE COMPILER BUILDS, NOT EVERY FILE IN ITS DIRECTORY. The walk keeps a .go
+// file only when go/build's default context, the one the running toolchain targets, would compile it:
+// its //go:build line and any _GOOS or _GOARCH suffix in its name must match. A directory can hold
+// mutually exclusive variants of one package. vendor/filippo.io/mldsa does: one file set for Go 1.26,
+// and mldsa_go1.27.go, which wraps the standard-library crypto/mldsa that Go 1.26 does not have.
+// Checking every variant together checks a package no compiler builds, and the missing standard-library
+// import then trips the importer control below for a reason that says nothing about this repository's
+// constants. The cost is that a file built only for another platform is outside the census on this
+// one: here that is cmd/downpipe/recombine_fifo_unix_test.go on a host that is not unix, and CI runs
+// on Linux, where it is inside. The count of files left out is logged with the result.
 func runConstAssertionCensus(t *testing.T, root string) censusResult {
 	t.Helper()
 
 	fset := token.NewFileSet()
 	byDir := map[string][]string{}
+	notBuilt := 0
 	err := filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -119,6 +133,14 @@ func runConstAssertionCensus(t *testing.T, root string) censusResult {
 			return nil
 		}
 		if strings.HasSuffix(p, ".go") {
+			built, merr := build.Default.MatchFile(filepath.Dir(p), d.Name())
+			if merr != nil {
+				return fmt.Errorf("reading the build constraints of %s: %w", p, merr)
+			}
+			if !built {
+				notBuilt++
+				return nil
+			}
 			byDir[filepath.Dir(p)] = append(byDir[filepath.Dir(p)], p)
 		}
 		return nil
@@ -127,7 +149,7 @@ func runConstAssertionCensus(t *testing.T, root string) censusResult {
 		t.Fatalf("walking %s: %v", root, err)
 	}
 
-	res := censusResult{bothConstant: map[string]int{}}
+	res := censusResult{bothConstant: map[string]int{}, notBuilt: notBuilt}
 	imp := importer.ForCompiler(fset, "source", nil)
 
 	dirs := make([]string, 0, len(byDir))
@@ -246,8 +268,8 @@ func TestConstantAgainstConstantAssertionCensus(t *testing.T) {
 	root := repoRoot(t)
 	res := runConstAssertionCensus(t, root)
 
-	t.Logf("census: %d file(s) in %d package group(s), %d comparison(s) in assertion position, %d with both operands constant, %d with exactly one",
-		res.files, res.packages, res.comparisons, len(res.bothConstant), res.oneConstant)
+	t.Logf("census: %d file(s) in %d package group(s), %d comparison(s) in assertion position, %d with both operands constant, %d with exactly one; %d file(s) left out because this toolchain and platform do not build them",
+		res.files, res.packages, res.comparisons, len(res.bothConstant), res.oneConstant, res.notBuilt)
 
 	// THE WALK-VISITED CONTROL. A census that arrives nowhere reports a clean corpus.
 	if res.comparisons < comparisonFloor {

@@ -4,13 +4,12 @@
 #
 # WHY THIS EXISTS, and why it announces rather than forbids. `linters.exclusions.paths: [".*"]` in
 # .golangci.yml takes a fixture from two errcheck findings to "0 issues." and exit 0, reproduced red to
-# green. The tidy answer is a gate that forbids a broad exclusion, and it was rejected: a
-# rule strict enough to catch `.*` also forbids a legitimately narrow exclusion, and the repository has
-# a real one already (misspell's ignore-rules for the product name "artifact"). The other tidy answer,
-# leaving it to review because the change is a tracked-file edit, was rejected too. A reviewer sees a
-# diff once; a log line is seen on every run, and this campaign has repeatedly found exemptions that
-# read plausibly in a diff while being wrong, because the sentence stayed still while the condition it
-# described moved. Announcement costs nothing and forbids nothing: an exclusion that is legitimate loses
+# green. A gate that forbids a broad exclusion
+# is not used: a rule strict enough to catch `.*` also forbids a legitimately narrow exclusion, and the
+# repository has a real one (misspell's ignore-rules for the product name "artifact"). Leaving it to
+# review is not enough either. A reviewer sees a diff once; a log line is seen on every run, and an
+# exemption can read plausibly in a diff while being wrong, because the sentence stays still while the
+# condition it describes moves. Announcement costs nothing and forbids nothing: an exclusion that is legitimate loses
 # nothing by being named on every run.
 #
 # WHAT MEASUREMENT CHANGED ABOUT THE BRIEF. golangci-lint's own verbose output already carries the

@@ -80,8 +80,7 @@ against any system that you do not control.
 
 ## Risk-based remediation SLA
 
-These timeframes run from the date a finding is confirmed (that is, triaged and
-reproduced, not merely reported).
+These timeframes run from the date we become aware of the finding.
 
 | Severity  | Definition (examples)                                           | Target remediation  |
 |-----------|---------------------------------------------------------------|---------------------|
@@ -138,15 +137,17 @@ push and pull request against `main` (`.github/workflows/ci.yml`):
    pinned to a full commit SHA in every workflow job that checks out the
    repository, and `actions/checkout` is run with `persist-credentials: false`.
 
-The CI and release toolchain is pinned via `GO_VERSION=1.26.6`
-(`.github/workflows/ci.yml`) and the `toolchain go1.26.6` directive in `go.mod`;
+The CI and release toolchain is pinned via `GO_VERSION=1.26.9`
+(`.github/workflows/ci.yml`) and the `toolchain go1.26.9` directive in `go.mod`;
 the `go.mod` `go` directive (the minimum supported floor) is `go 1.26.0`. The
-1.26.6 toolchain was chosen specifically because it incorporates stdlib
+1.26.9 toolchain was chosen specifically because it incorporates stdlib
 advisories tracked by `govulncheck` that earlier patch releases did not carry:
 GO-2026-5856 (crypto/tls ECH privacy leak, missing before 1.26.5) and
 GO-2026-6218, GO-2026-6090, GO-2026-6088, GO-2026-5972 and GO-2026-5026
 (net/url, crypto/tls, encoding/xml, encoding/asn1 and net/http, all missing
-before 1.26.6); the comment in `go.mod` records this rationale.
+before 1.26.6) and GO-2026-6603, GO-2026-6604, GO-2026-6605,
+GO-2026-6607, GO-2026-6608, GO-2026-6610, GO-2026-6611, GO-2026-6612, GO-2026-6613 and GO-2026-6617
+(net/http, crypto/tls, net/textproto and os, all missing before 1.26.9); the comment in `go.mod` records this rationale.
 
 ### Response
 
@@ -166,8 +167,8 @@ before 1.26.6); the comment in `go.mod` records this rationale.
 The Go module (`go.mod`) has two direct dependencies:
 
 - `golang.org/x/crypto v0.57.0` supplies HKDF (`golang.org/x/crypto/hkdf`).
-- `filippo.io/mldsa v0.0.0-20260215214346-43d0283efc3e` supplies ML-DSA-87
-  (FIPS-204). This is pinned to a full commit hash.
+- `filippo.io/mldsa v1.0.0` supplies ML-DSA-87 (FIPS-204). This is pinned to
+  that exact release, and `go.sum` records its hash.
 
 The Go 1.26 standard library supplies `crypto/mlkem` (ML-KEM-1024, FIPS-203),
 `crypto/ecdh` (X25519) and `crypto/ed25519`. Together these implement the mandatory PQ-hybrid envelope:
@@ -248,9 +249,7 @@ own CI does not run the engine.
 
 This policy lists no open finding for the downpipe CLI. The file-handling policy that
 covers the CLI, including the 2 GiB object cap in `internal/source/dir.go` and the
-manifest-bounded decompression in `internal/format/restore.go`, is published as
-[`docs/security/file-handling.md`](https://github.com/downpipes-io/engine/blob/main/docs/security/file-handling.md)
-in the engine repository.
+manifest-bounded decompression in `internal/format/restore.go`, is part of the engine's published security documentation.
 
 The normative behaviour of the format itself, including the verification and
 rejection rules a conformant reader must enforce, is specified in

@@ -448,7 +448,7 @@ var exitCodePins = []struct {
 	{"ExitStale", ExitStale, 5},
 	{"ExitUsage", ExitUsage, 6},
 	// The two advisory codes are outside the SPEC-normative set but are just as much a contract
-	// with a DR script, and a refactor that renumbered them would silently change what an
+	// with a DR script, and renumbering them would silently change what an
 	// operator's automation concludes from a restore.
 	{"ExitPreflight", ExitPreflight, 7},
 	{"ExitIncompleteMarkers", ExitIncompleteMarkers, 8},

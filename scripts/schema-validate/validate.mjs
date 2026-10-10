@@ -1062,9 +1062,8 @@ function censusPopulation(recordedUrls, cacheKeys, toPath) {
 // whatever happens to be installed, so a tree behind the lock comes back as exit 127 and reads like broken
 // code. This repository has no such chain. Its npm surface is this one directory.
 //
-// THE COUNT IN THIS PARAGRAPH WAS WRONG AND IS NOW ENUMERATED, because the argument for having no
-// repository-level deps gate rests on it. It used to say BOTH of the two things that use this directory
-// reinstall first. There are six, and four of them do not reinstall:
+// THE USERS ARE ENUMERATED, because the argument for having no repository-level deps gate rests on
+// them. There are six users of this directory, and four of them do not reinstall:
 //
 //   1. `make schema-validate`                     npm ci, then npm run validate      READS node_modules
 //   2. CI job Schema (ajv vectors)                npm ci, then npm run validate      READS node_modules
@@ -1077,7 +1076,7 @@ function censusPopulation(recordedUrls, cacheKeys, toPath) {
 // this directory's package.json to reach validate.mjs through `cd <dir> && npm run <name>`, which is the
 // only channel by which this file is named as an entry point at all. It reads a manifest, never a tree.
 //
-// THE ARGUMENT SURVIVES THE CORRECTION, and it survives on a measurement rather than on the count. What
+// THE ARGUMENT RESTS ON A MEASUREMENT rather than on the count. What
 // a deps gate would protect is a consumer that READS node_modules without reinstalling, and there is
 // still no such consumer: 1 and 2 are the only two that read it and both reinstall immediately before.
 // Numbers 3 to 6 read the lockfile or the manifest and never the installed tree, and that was verified
@@ -2303,15 +2302,13 @@ function selfTest() {
     assert(aliasedJudge.pinned.size === 0, "an alias record must not reach the compared set, got " + [...aliasedJudge.pinned.keys()].join(", "));
   }
 
-  // THE NUMBER OF TREES IS COUNTED, NOT WRITTEN DOWN. The summary at the bottom of this function used to
-  // say "six installed trees" and had said it since the commit that introduced the sentence. Driven, the
-  // count is EIGHT: six call sites, one of which is a three-iteration loop, and every one of the eight
-  // probe answers differs from the other seven. Six is the number of CALL SITES, which is not what the
-  // sentence claims to report and is not what a reader of it would go and check.
+  // THE NUMBER OF TREES IS COUNTED, NOT WRITTEN DOWN. The count is EIGHT: six call sites, one of which
+  // is a three-iteration loop, and every one of the eight probe answers differs from the other seven.
+  // Six is the number of CALL SITES, which is not what the summary reports.
   //
-  // NOTHING PINNED IT, which is why it drifted rather than being caught: the self-test can add a tree
-  // and stay at exit 0 with the sentence still saying six. So the sentence now reads the recorder below,
-  // the recorder counts what actually went through compareInstalled, and three assertions hold the
+  // A written number would drift, because the self-test can add a tree and stay at exit 0 with the
+  // sentence unchanged. So the summary reads the recorder below, the recorder counts what actually
+  // went through compareInstalled, and three assertions hold the
   // count, the distinctness and the "none of which exist on disk" half of the same clause.
   //
   // THE RECORDER CALLS THE PROBE ITSELF, one extra time per pin per tree. Every probe here is a pure

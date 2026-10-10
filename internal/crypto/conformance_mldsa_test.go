@@ -13,11 +13,11 @@ import (
 )
 
 // downpipe-sys-deps-01: the ML-DSA-87 signature primitive is supplied by
-// filippo.io/mldsa, pinned to a pre-release pseudo-version on an explicitly-unstable
-// API (see go.mod). Until the standard-library crypto/mldsa ships and the wrap moves to
-// it, a silent change to that library's signature encoding between pins would let a
-// freshly built reader fail to verify an archive a previous build sealed, with no
-// compile error to warn us.
+// filippo.io/mldsa, pinned exactly in go.mod. Until the wrap moves to the
+// standard-library crypto/mldsa, a silent change to that library's signature encoding
+// between pins, or between the module's own implementation and the standard-library one
+// it wraps on newer toolchains, would let a freshly built reader fail to verify an
+// archive a previous build sealed, with no compile error to warn us.
 //
 // This conformance test is the upgrade-time guard. mldsa-frozen.json holds a historical
 // ML-DSA-87 public key, message and signature, frozen against the current pin. Because
