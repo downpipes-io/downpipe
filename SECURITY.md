@@ -102,11 +102,14 @@ within the Cloudflare account are not reachable from this component alone.
 
 ## Supported versions and branches
 
-| Branch / tag | Status           | Notes                                       |
-|-------------|------------------|---------------------------------------------|
-| `main`      | Supported        | All security fixes land here first           |
-| Tagged releases | Supported for 90 days after tag | Fixes backported on request for Critical/High |
-| Older releases | Not supported  | Upgrade to the latest tag                   |
+Fixes ship only in the next release; the vendor does not backport them.
+
+| Release | Status | Notes |
+|-------------|------------------|------------------------------------------|
+| `main`      | Supported        | All security fixes land here first       |
+| Latest release | Supported | It has no successor, so it has no end-of-support date |
+| An earlier release | Supported until 90 days after its successor ships | Upgrade to the latest release |
+| A release past that date | End of life | No fixes of any kind |
 
 The release workflow builds each release only from a signed tag. There is no automatic update mechanism
 in the CLI itself; operators are responsible for pulling and deploying fixes within
