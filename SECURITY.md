@@ -140,17 +140,18 @@ push and pull request against `main` (`.github/workflows/ci.yml`):
    pinned to a full commit SHA in every workflow job that checks out the
    repository, and `actions/checkout` is run with `persist-credentials: false`.
 
-The CI and release toolchain is pinned via `GO_VERSION=1.26.9`
-(`.github/workflows/ci.yml`) and the `toolchain go1.26.9` directive in `go.mod`;
+The CI and release toolchain is pinned via `GO_VERSION=1.26.10`
+(`.github/workflows/ci.yml`) and the `toolchain go1.26.10` directive in `go.mod`;
 the `go.mod` `go` directive (the minimum supported floor) is `go 1.26.0`. The
-1.26.9 toolchain was chosen specifically because it incorporates stdlib
+1.26.10 toolchain was chosen specifically because it incorporates stdlib
 advisories tracked by `govulncheck` that earlier patch releases did not carry:
 GO-2026-5856 (crypto/tls ECH privacy leak, missing before 1.26.5) and
 GO-2026-6218, GO-2026-6090, GO-2026-6088, GO-2026-5972 and GO-2026-5026
 (net/url, crypto/tls, encoding/xml, encoding/asn1 and net/http, all missing
 before 1.26.6) and GO-2026-6603, GO-2026-6604, GO-2026-6605,
 GO-2026-6607, GO-2026-6608, GO-2026-6610, GO-2026-6611, GO-2026-6612, GO-2026-6613 and GO-2026-6617
-(net/http, crypto/tls, net/textproto and os, all missing before 1.26.9); the comment in `go.mod` records this rationale.
+(net/http, crypto/tls, net/textproto and os, all missing before 1.26.9) and GO-2026-6809
+(crypto/x509 distrust of compromised intermediate certificates, missing before 1.26.10); the comment in `go.mod` records this rationale.
 
 ### Response
 

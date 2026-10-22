@@ -359,7 +359,7 @@ Every dependency this reader needs, including the post-quantum signature module
 (`filippo.io/mldsa`), is vendored into `./vendor`. The reader therefore builds,
 tests and runs from the checked-out source with no module download, and with no
 network access at all provided the machine's own Go already satisfies the
-`toolchain go1.26.9` pin in `go.mod`. That is what underpins the offline-recovery
+`toolchain go1.26.10` pin in `go.mod`. That is what underpins the offline-recovery
 promise above: if the vendor and Cloudflare are both gone, you can still rebuild
 the recovery tool from this repository alone.
 
@@ -370,7 +370,7 @@ go test  -mod=vendor ./...
 
 The toolchain pin is the one thing the checked-out source cannot supply. Under
 Go's default `GOTOOLCHAIN=auto`, a machine whose installed `go` is older than the
-pin, and whose module cache does not already hold `go1.26.9`, fetches that
+pin, and whose module cache does not already hold `go1.26.10`, fetches that
 toolchain from the module proxy before it compiles anything; with no proxy
 reachable the build exits 1 with `toolchain not available` rather than quietly
 falling back to the older Go. Driven against a clean module cache

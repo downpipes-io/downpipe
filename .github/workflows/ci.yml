@@ -56,7 +56,7 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.26.9" # 1.26.4 was NOT patched against GO-2026-5856 (crypto/tls ECH privacy leak)
+  GO_VERSION: "1.26.10" # 1.26.4 was NOT patched against GO-2026-5856 (crypto/tls ECH privacy leak)
   # and 1.26.5 was NOT patched against GO-2026-6218/6090/6088/5972/5026 (net/url, crypto/tls,
   # encoding/xml, encoding/asn1, net/http), and 1.26.8 is NOT patched against GO-2026-6603, -6604, -6605,
   # -6607, -6608, -6610, -6611, -6612, -6613 and -6617 (net/http, crypto/tls, net/textproto, os), which govulncheck reports as AFFECTING
@@ -72,12 +72,12 @@ jobs:
     # Exercise the patched build toolchain and the declared MSRV floor (go 1.26, the
     # go.mod minimum) so a source build on either can never silently regress. The MSRV
     # row uses GOTOOLCHAIN=local to pin the matrix Go rather than letting go.mod's
-    # `toolchain go1.26.9` directive auto-upgrade it.
+    # `toolchain go1.26.10` directive auto-upgrade it.
     strategy:
       fail-fast: false
       matrix:
         include:
-          - go: "1.26.9" # patched build/release toolchain
+          - go: "1.26.10" # patched build/release toolchain
             gotoolchain: auto
           - go: "1.26" # MSRV floor declared in go.mod
             gotoolchain: local
