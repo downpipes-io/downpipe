@@ -2,18 +2,19 @@ module github.com/downpipes-io/downpipe
 
 go 1.26.0
 
-// Pin the build toolchain to the patched 1.26.9 (GO-2026 stdlib advisories: x509 parsing DoS,
+// Pin the build toolchain to the patched 1.26.10 (GO-2026 stdlib advisories: x509 parsing DoS,
 // HTTP/2 SETTINGS infinite loop, net/textproto, and GO-2026-5856 Encrypted Client Hello privacy
 // leak in crypto/tls, which 1.26.4 did NOT carry; and GO-2026-6218 net/url quadratic resolvePath,
 // GO-2026-6090 crypto/tls post-handshake message limit, GO-2026-6088 encoding/xml recursion depth,
 // GO-2026-5972 encoding/asn1 recursion depth and GO-2026-5026 net/http Punycode label rejection
 // (via the vendored golang.org/x/net/idna), which 1.26.5 did NOT carry; and GO-2026-6603, -6604, -6605, -6607, -6608, -6610, -6611,
 // -6612, -6613 and -6617 in net/http, crypto/tls, net/textproto and os, which 1.26.8 does NOT
-// carry). CI/release set
+// carry; and GO-2026-6809 crypto/x509 distrust of compromised intermediate certificates, which
+// 1.26.9 does NOT carry). CI/release set
 // GO_VERSION to match; this forces dev/customer source builds to the same patched toolchain
 // (GOTOOLCHAIN=auto), so a stale local Go can't produce a vulnerable reader. Verified by
 // govulncheck (ASVS V15.2.1).
-toolchain go1.26.9
+toolchain go1.26.10
 
 require golang.org/x/crypto v0.57.0
 

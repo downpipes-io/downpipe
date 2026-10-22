@@ -48,6 +48,13 @@ reader that implements their version. It points at
 `https://github.com/downpipes-io/downpipe` for the mapping. `inspect`, `keys --which`
 and the `Open` refusal all carry that same pointer.
 
+## [Unreleased]
+
+Reads format versions: `downpipe/0.1.x`.
+
+- The build and release toolchain is Go 1.26.10. It carries the fix for the Go standard library
+  advisory GO-2026-6809 in crypto/x509.
+
 ## [0.3.5] - 2026-10-11
 
 Reads format versions: `downpipe/0.1.x`.

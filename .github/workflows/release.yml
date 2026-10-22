@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.26.9"
+  GO_VERSION: "1.26.10"
   GOVULNCHECK_VERSION: "v1.4.0" # pinned off @latest for reproducible releases
   CYCLONEDX_GOMOD_VERSION: "v1.10.0" # pinned off @latest for reproducible releases
 

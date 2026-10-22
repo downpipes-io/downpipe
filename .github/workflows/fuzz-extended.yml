@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.26.9" # matches ci.yml's patched toolchain
+  GO_VERSION: "1.26.10" # matches ci.yml's patched toolchain
 
 jobs:
   fuzz-extended:
