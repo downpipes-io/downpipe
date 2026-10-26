@@ -48,6 +48,20 @@ reader that implements their version. It points at
 `https://github.com/downpipes-io/downpipe` for the mapping. `inspect`, `keys --which`
 and the `Open` refusal all carry that same pointer.
 
+## [0.3.6] - 2026-10-26
+
+Reads format versions: `downpipe/0.1.x`.
+
+### Fixed
+
+- A count or size field written as JSON null is refused with exit 6, as any other non-canonical
+  count is.
+
+### Dependencies
+
+- The build and release toolchain is Go 1.26.10. It carries the fix for the Go standard library
+  advisory GO-2026-6809 in crypto/x509.
+
 ## [0.3.5] - 2026-10-11
 
 Reads format versions: `downpipe/0.1.x`.
@@ -467,6 +481,7 @@ First public release of the offline reader, the recovery CLI and the library.
 - `version`, `--version` and `-v` report the build version, injected at release
   time and reported as `dev` for an unstamped local build.
 
+[0.3.6]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.6
 [0.3.5]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.5
 [0.3.4]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.4
 [0.3.3]: https://github.com/downpipes-io/downpipe/releases/tag/v0.3.3

@@ -49,7 +49,7 @@ jobs:
         # Advisory: `|| true` keeps the job green until the baseline is triaged. The
         # SARIF is uploaded below so findings are visible in code scanning regardless.
         run: |
-          pipx install semgrep
+          pipx install semgrep==1.178.0
           semgrep scan --config p/default --config p/secrets --metrics off --sarif --output semgrep.sarif || true
       # WHY THIS UPLOAD IS SKIPPED RATHER THAN ALLOWED TO FAIL.
       #

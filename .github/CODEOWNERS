@@ -6,3 +6,7 @@
 
 # CI, supply-chain and security configuration always require owner review.
 /.github/ @downpipes-io/maintainers
+
+# The vendored ML-DSA verification code and the check that re-derives it from the pinned modules.
+/vendor/ @downpipes-io/maintainers
+/scripts/check-vendor-integrity.sh @downpipes-io/maintainers

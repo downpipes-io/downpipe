@@ -73,7 +73,7 @@ Negative (SPEC.md 14.3): `truncated-final-chunk`, `reordered-chunks`, `flipped-t
 `reordered-segments`, `dropped-break-glass-wrap`, `missing-break-glass`,
 `forged-capsule-wrap`, `mutated-recipient-fingerprint`, `shard-hash-mismatch`,
 `wrong-merkle-root`, `incomplete-record-count`, `absent-signature`, `bad-signature`,
-`unknown-signer`, `non-canonical-json`, `count-over-2pow53`, `in-range-count-as-string`,
+`unknown-signer`, `non-canonical-json`, `count-over-2pow53`, `in-range-count-as-string`, `null-count`,
 `stale-run`, `runlog-rollback`, `absent-runlog`, `recovery-bundle-tampered`.
 
 Signer pin (SPEC.md 9.1): `bundled-signer-pinned` (positive), `bundled-signer-replaced`
@@ -100,7 +100,7 @@ Three points carry the corpus past easy mistakes:
   would otherwise swallow it on a clean checkout while the directory looks complete
   locally. The repository `.gitignore` negates `*.key` (and `*.pem`/`*.age`) under this
   corpus path so a plain `git add` tracks each fixture; real keys elsewhere stay ignored.
-- `count-over-2pow53` and `in-range-count-as-string` are signed over the edited bytes,
+- `count-over-2pow53`, `in-range-count-as-string` and `null-count` are signed over the edited bytes,
   not byte-flipped after signing. The signature gate runs before the count check, so a
   post-sign flip would exit 2 instead of the intended 6; the generator emits the
   non-canonical count form and re-signs those exact bytes.

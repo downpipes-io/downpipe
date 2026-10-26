@@ -84,9 +84,11 @@ refused rather than guessed), `unknown-codec` (exit 6, an envelope codec outside
 closed set is refused at open), `mixed-codec` (exit 6), `secrets-with-compression`,
 `non-canonical-json` (exit 2, the signature over the canonical bytes fails),
 `count-over-2pow53`, `in-range-count-as-string`, `leading-zero-count`,
-`negative-count`, `non-integer-count` (all five exit 6, signed over the edited bytes and
-together exhausting SPEC 11.3's canonical-numeric-form rules for a count field: number not
-string, integer not decimal/exponent, non-negative, no leading zero, at most 2^53-1),
+`negative-count`, `non-integer-count`, `null-count` (all six exit 6, signed over the edited
+bytes and together exhausting SPEC 11.3's canonical-numeric-form rules for a count field:
+number not string, integer not decimal/exponent, non-negative, no leading zero, at most
+2^53-1, and a present field is never null; an absent field stays absent, pinned by the
+reader's unit tests),
 `stale-run`, `runlog-rollback`, `runlog-duplicate-index`,
 `runlog-forked-prevrunid` (both exit 5, RUNLOG chain anomalies), `absent-runlog`,
 `recovery-bundle-tampered`.
@@ -96,7 +98,7 @@ under its fingerprint recovers the run with no key file), `bundled-signer-replac
 a replaced copy fails the pin) and `bundled-signer-absent` (exit 6, no copy to pin). Each
 sets `options.signerFingerprint` to the fingerprint of the vector's own signer.
 
-`leading-zero-count` and `non-integer-count` are two of the five numeric-form vectors, but
+`leading-zero-count` and `non-integer-count` are two of the six numeric-form vectors, but
 worth a specific caveat: their rejection is over-determined in the Go reader.
 `leading-zero-count`'s "01" is not valid JSON syntax at all (RFC 8259 forbids a leading
 zero in an int production), so `encoding/json` refuses to decode it before the
@@ -153,6 +155,7 @@ mutated-recipient-fingerprint
 negative-count
 non-canonical-json
 non-integer-count
+null-count
 recovery-bundle-tampered
 reordered-chunks
 reordered-segments

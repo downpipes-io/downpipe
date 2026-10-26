@@ -172,7 +172,9 @@ The Go module (`go.mod`) has two direct dependencies:
 
 - `golang.org/x/crypto v0.57.0` supplies HKDF (`golang.org/x/crypto/hkdf`).
 - `filippo.io/mldsa v1.0.0` supplies ML-DSA-87 (FIPS-204). This is pinned to
-  that exact release, and `go.sum` records its hash.
+  that exact release, and `go.sum` records its hash. The committed `vendor/` tree is
+  what the reader is built from, and CI re-derives it from the pinned modules and fails
+  on any byte difference.
 
 The Go 1.26 standard library supplies `crypto/mlkem` (ML-KEM-1024, FIPS-203),
 `crypto/ecdh` (X25519) and `crypto/ed25519`. Together these implement the mandatory PQ-hybrid envelope:

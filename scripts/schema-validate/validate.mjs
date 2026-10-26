@@ -143,6 +143,7 @@ const EXPECT_SCHEMA_INVALID = {
   "unimplemented-minor": "formatVersion is downpipe/0.2.0, not the const downpipe/0.1.0 (SPEC.md 13, 14.3)",
   "unknown-codec": "envelope.codec is zstd, outside the closed {none, gzip} enum (SPEC.md 5.2, 14.3)",
   "count-over-2pow53": "declaredRecordCount is the JSON number 9007199254740993, above 2^53-1 (SPEC.md 11.3, 14.3)",
+  "null-count": "declaredRecordCount is the JSON literal null; schema.json's countField accepts an integer or a decimal string only, so null is rejected (SPEC.md 11.3, 14.3)",
   "missing-break-glass": "breakGlassPresent is false and no break-glass recipient is present (SPEC.md 5.2, 14.3)",
   "negative-count": "declaredRecordCount is the JSON number -1; a count is non-negative by definition, so schema.json's countField (minimum: 0) rejects it (SPEC.md 11.3, 14.3)",
 };

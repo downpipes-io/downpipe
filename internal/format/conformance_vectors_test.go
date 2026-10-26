@@ -475,6 +475,17 @@ func negativeNumericFormVectors() []corpusVector {
 			expect: vectorExpect{Mode: "negative", ExitCode: ExitUsage, Phase: "open"},
 		},
 		{
+			// declaredRecordCount present as the JSON literal null and re-signed; a count
+			// field is a number, so a present null is refused at the count check with the
+			// same exit code as the other non-canonical forms (SPEC.md 11.3, 14.3).
+			name: "null-count",
+			spec: vectorSpec{dpID: "dp_nullcount", records: []recordSpec{{name: "object-a", srcType: "r2", value: singleChunkValue}}},
+			tamper: func(t *testing.T, dir string, signer *crypto.HybridSigner) {
+				signRawEdited(t, dir, signer, replaceCountForm("null"))
+			},
+			expect: vectorExpect{Mode: "negative", ExitCode: ExitUsage, Phase: "open"},
+		},
+		{
 			// declaredRecordCount edited to the byte sequence "01" (a leading zero on an
 			// otherwise in-range integer) and re-signed. This is SPEC.md 11.3's leading-zero
 			// prohibition, but "01" is not valid JSON syntax at all (RFC 8259's int

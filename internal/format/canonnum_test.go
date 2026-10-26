@@ -116,3 +116,78 @@ func TestCaseCollidingDuplicateKeyIsRefusedEvenWithCanonicalKeyPresent(t *testin
 		}
 	}
 }
+
+// TestValidateCountsRefusesNull checks that a count written as JSON null is refused with
+// ExitUsage for every count field the reader checks, and is not read as absent (zero).
+func TestValidateCountsRefusesNull(t *testing.T) {
+	cases := []struct {
+		name  string
+		raw   string
+		paths []string
+	}{
+		{"root declaredRecordCount", `{"declaredRecordCount":null}`, []string{"declaredRecordCount", "shardCount", "freshness.runlogIndex"}},
+		{"root shardCount", `{"shardCount":null}`, []string{"declaredRecordCount", "shardCount", "freshness.runlogIndex"}},
+		{"root freshness.runlogIndex", `{"freshness":{"runlogIndex":null}}`, []string{"declaredRecordCount", "shardCount", "freshness.runlogIndex"}},
+		{"runlog index", `{"index":null}`, []string{"index", "recordCount"}},
+		{"runlog recordCount", `{"recordCount":null}`, []string{"index", "recordCount"}},
+		{"preamble recordCountInShard", `{"recordCountInShard":null}`, []string{"recordCountInShard"}},
+		{"record plaintextSize", `{"plaintextSize":null}`, recordCountPaths},
+		{"record packed.offset", `{"segments":[{"packed":{"offset":null,"length":1}}]}`, recordCountPaths},
+		{"record packed.length", `{"segments":[{"packed":{"offset":0,"length":null}}]}`, recordCountPaths},
+		{"record chunkRange element", `{"segments":[{"chunkRange":[0,null]}]}`, recordCountPaths},
+	}
+	for _, c := range cases {
+		err := validateCounts([]byte(c.raw), c.paths...)
+		if err == nil {
+			t.Errorf("%s: null count was accepted", c.name)
+			continue
+		}
+		var ee *ExitError
+		if !errors.As(err, &ee) || ee.Code != ExitUsage {
+			t.Errorf("%s: want ExitUsage, got %v", c.name, err)
+		}
+	}
+}
+
+func TestValidateCountsRefusesNullParent(t *testing.T) {
+	rootPaths := []string{"declaredRecordCount", "shardCount", "freshness.runlogIndex"}
+	cases := []struct {
+		name  string
+		raw   string
+		paths []string
+	}{
+		{"root freshness", `{"freshness":null}`, rootPaths},
+		{"record segments", `{"segments":null}`, recordCountPaths},
+		{"record segment element", `{"segments":[null]}`, recordCountPaths},
+		{"record chunkRange", `{"segments":[{"chunkRange":null,"packed":null}]}`, recordCountPaths},
+	}
+	for _, c := range cases {
+		err := validateCounts([]byte(c.raw), c.paths...)
+		if err == nil {
+			t.Errorf("%s: null parent was accepted", c.name)
+			continue
+		}
+		var ee *ExitError
+		if !errors.As(err, &ee) || ee.Code != ExitUsage {
+			t.Errorf("%s: want ExitUsage, got %v", c.name, err)
+		}
+	}
+}
+
+func TestValidateCountsAllowsNullPackedAndAbsent(t *testing.T) {
+	cases := []struct {
+		name  string
+		raw   string
+		paths []string
+	}{
+		{"whole-segment record", `{"plaintextSize":5,"segments":[{"chunkRange":[0,1],"packed":null}]}`, recordCountPaths},
+		{"packed record", `{"plaintextSize":5,"segments":[{"chunkRange":[0,1],"packed":{"offset":0,"length":5}}]}`, recordCountPaths},
+		{"absent freshness", `{"declaredRecordCount":1,"shardCount":1}`, []string{"declaredRecordCount", "shardCount", "freshness.runlogIndex"}},
+		{"absent segments", `{"plaintextSize":5}`, recordCountPaths},
+	}
+	for _, c := range cases {
+		if err := validateCounts([]byte(c.raw), c.paths...); err != nil {
+			t.Errorf("%s: refused: %v", c.name, err)
+		}
+	}
+}

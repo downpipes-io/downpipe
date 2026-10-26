@@ -100,8 +100,8 @@ func OpenShard(sealed, wrapKey []byte) (spec.ShardPreamble, []spec.ShardRecord, 
 // recordCountPaths names every count field of a shard record line (SPEC.md 11.3).
 var recordCountPaths = []string{
 	"plaintextSize",
-	"segments[].packed.offset",
-	"segments[].packed.length",
+	"segments[].packed?.offset",
+	"segments[].packed?.length",
 	"segments[].chunkRange[]",
 }
 
