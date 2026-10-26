@@ -136,7 +136,7 @@ var expectedVectorNames = []string{
 	"gzip-codec", "in-range-count-as-string", "incomplete-marker", "incomplete-record-count",
 	"kem-combiner-kat", "leading-zero-count", "master-capsule", "missing-break-glass",
 	"mixed-codec", "mldsa-kat", "mlkem-kat", "mutated-recipient-fingerprint",
-	"negative-count", "non-canonical-json", "non-integer-count", "recovery-bundle-tampered",
+	"negative-count", "non-canonical-json", "non-integer-count", "null-count", "recovery-bundle-tampered",
 	"reordered-chunks", "reordered-segments", "reprovision-workers", "runlog-allocation-gap",
 	"runlog-duplicate-index", "runlog-forked-prevrunid", "runlog-interleaved-append",
 	"runlog-rollback", "secrets-no-dedup", "secrets-with-compression", "seg-empty",

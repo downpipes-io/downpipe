@@ -302,9 +302,10 @@ jobs:
           cache-dependency-path: scripts/schema-validate/package-lock.json
       - name: npm audit (scripts/schema-validate, every tree, any severity)
         working-directory: scripts/schema-validate
+        # The audit runs on npm 11.19.1, pinned exactly, which asks the registry's bulk advisory endpoint.
         run: |
-          npm audit --omit=dev --audit-level=low
-          npm audit --audit-level=low
+          npx -y npm@11.19.1 audit --omit=dev --audit-level=low
+          npx -y npm@11.19.1 audit --audit-level=low
 
   fuzz:
     name: Fuzz (${{ matrix.pkg }})
@@ -441,9 +442,32 @@ jobs:
         if: ${{ !cancelled() }}
         run: ./scripts/check-ci-gate-completeness.sh
 
+  vendor-integrity:
+    name: Vendor integrity (vendor/ equals the pinned modules)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with: { egress-policy: audit }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with: { go-version: "${{ env.GO_VERSION }}" }
+      # Go builds from vendor/, so go.sum never grades the vendored ML-DSA verification code. This step
+      # re-derives vendor/ from the pinned modules (exact version and go.sum checksum, fetched through the
+      # Go module proxy with the checksum database on) and fails on any byte difference.
+      - name: vendor/ equals the tree re-derived from the pinned modules
+        run: bash scripts/check-vendor-integrity.sh
+      # The check's own gate. It changes one byte, adds a file and removes a file in a copy of vendor/ and
+      # requires a refusal each time, then requires an acceptance when each is put back.
+      - name: vendor integrity self-test
+        if: ${{ !cancelled() }}
+        run: bash scripts/check-vendor-integrity.sh --self-test
+
   ci-success:
     name: CI Success
-    needs: [build-test, lint, govulncheck, coverage, fuzz, schema-validate, vectors-listing]
+    needs: [build-test, lint, govulncheck, coverage, fuzz, schema-validate, vectors-listing, vendor-integrity]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     if: always()

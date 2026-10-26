@@ -1874,6 +1874,9 @@ rejected as non-canonical (exit 6). This removes the number-versus-string ambigu
 that would otherwise let two writers produce different RFC 8785 canonical bytes for
 the same value and so produce incompatible signatures.
 
+A count or size field that is present as JSON `null` is rejected (exit 6), as a number
+in a non-canonical form is. A field that is absent stays absent.
+
 ### 11.4 Base64 for binary-in-JSON
 
 All binary carried inside downpipe JSON uses base64url with no padding (Go
@@ -2470,6 +2473,9 @@ A conformant reader MUST reject each, with the noted outcome.
 - `non-integer-count`: base `seg-single-chunk`, `declaredRecordCount` encoded as the JSON
   number `1.0` and re-signed; a count is an integer literal only, no decimal point or
   exponent form is canonical; exit 6 (section 11.3).
+- `null-count`: base `seg-single-chunk`, `declaredRecordCount` present as the JSON literal
+  `null` and re-signed; a count field that is present is a number or, above 2^53 - 1, a
+  decimal string, so a reader refuses `null`; exit 6 (section 11.3).
 - `secrets-with-compression`: base `secrets-no-dedup`, one secret record set to `codec`
   gzip and re-signed, while `envelope.codec` stays none. A `secrets` record MUST have
   `codec` none (section 5.2, 12.4). In this vector the record codec also differs from the

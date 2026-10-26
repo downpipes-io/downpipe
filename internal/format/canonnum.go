@@ -22,8 +22,9 @@ const maxCanonicalInt int64 = 1<<53 - 1
 // (it may be omitempty). Every violation is a usage error (exit 6).
 //
 // A path is dotted. A segment that ends in "[]" names an array, and the rest of the path
-// applies to each element: "segments[].packed.offset" is the packed offset of every
-// segment, and "segments[].chunkRange[]" is every chunkRange endpoint. Before, a path
+// applies to each element: "segments[].packed?.offset" is the packed offset of every
+// segment, and "segments[].chunkRange[]" is every chunkRange endpoint. A segment that ends
+// in "?" names an object the format allows to be null; any other null on a path is refused. Before, a path
 // could name only an object field, so the shard parse checked plaintextSize and nothing
 // under segments. A string packed.offset then failed later in encoding/json as an
 // uncoded error (exit 2), and a negative offset or a chunkRange endpoint above 2^53-1
@@ -57,8 +58,9 @@ type countSite struct {
 }
 
 // collectCounts walks parts through v and appends every value the path reaches to out. A
-// field that is absent or null under its exact name adds nothing, and so does a step
-// into a value that is not an object: encoding/json then fails on the shape itself.
+// field that is absent under its exact name adds nothing, and so does a step into a value
+// that is not an object: encoding/json then fails on the shape itself. A count that is
+// present as null is an error.
 //
 // The case-collision check runs at EVERY object on the path, before the absence check,
 // not only when the exact key is missing. It used to run only in the "absent" branch, on
@@ -85,7 +87,8 @@ func collectCounts(v any, parts []string, prefix string, out *[]countSite) error
 		*out = append(*out, countSite{path: prefix, value: v})
 		return nil
 	}
-	key, each := strings.CutSuffix(parts[0], "[]")
+	seg, each := strings.CutSuffix(parts[0], "[]")
+	key, nullable := strings.CutSuffix(seg, "?")
 	m, ok := v.(map[string]any)
 	if !ok {
 		return nil
@@ -98,8 +101,25 @@ func collectCounts(v any, parts []string, prefix string, out *[]countSite) error
 		return fmt.Errorf("field %q appears as %q, which differs only in case: canonical field names are exact", path, found)
 	}
 	child, ok := m[key]
-	if !ok || child == nil {
+	if !ok {
 		return nil
+	}
+	// A null on the path is present and is not the shape the format gives that field, so it
+	// is refused (SPEC 11.3), not read as absent: a null count, a null array, and a null
+	// object the count sits in all decode to zero values otherwise. Only a step marked "?"
+	// may be null (packed, SPEC 6.3: null means the record owns the listed chunks), and a
+	// null there adds nothing.
+	if child == nil {
+		switch {
+		case nullable:
+			return nil
+		case len(parts) == 1 && !each:
+			return fmt.Errorf("field %q must be a canonical integer, not null", path)
+		case each:
+			return fmt.Errorf("field %q must be an array, not null", path)
+		default:
+			return fmt.Errorf("field %q must be an object, not null", path)
+		}
 	}
 	if !each {
 		return collectCounts(child, parts[1:], path, out)
@@ -109,7 +129,11 @@ func collectCounts(v any, parts []string, prefix string, out *[]countSite) error
 		return fmt.Errorf("field %q must be an array, not %T", path, child)
 	}
 	for i, el := range arr {
-		if err := collectCounts(el, parts[1:], fmt.Sprintf("%s[%d]", path, i), out); err != nil {
+		elPath := fmt.Sprintf("%s[%d]", path, i)
+		if el == nil && len(parts) > 1 {
+			return fmt.Errorf("field %q must be an object, not null", elPath)
+		}
+		if err := collectCounts(el, parts[1:], elPath, out); err != nil {
 			return err
 		}
 	}
