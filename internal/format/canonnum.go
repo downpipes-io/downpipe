@@ -24,11 +24,10 @@ const maxCanonicalInt int64 = 1<<53 - 1
 // A path is dotted. A segment that ends in "[]" names an array, and the rest of the path
 // applies to each element: "segments[].packed?.offset" is the packed offset of every
 // segment, and "segments[].chunkRange[]" is every chunkRange endpoint. A segment that ends
-// in "?" names an object the format allows to be null; any other null on a path is refused. Before, a path
-// could name only an object field, so the shard parse checked plaintextSize and nothing
-// under segments. A string packed.offset then failed later in encoding/json as an
-// uncoded error (exit 2), and a negative offset or a chunkRange endpoint above 2^53-1
-// decoded without an error at all (SPEC 11.3 says exit 6 for both).
+// in "?" names an object the format allows to be null; any other null on a path is refused. A path can reach
+// into nested objects and arrays, so the shard parse checks every count under segments as well as
+// plaintextSize. A string packed.offset, a negative offset or a chunkRange endpoint above 2^53-1
+// is refused here with the exit code SPEC 11.3 requires (6), before encoding/json decodes the shard.
 func validateCounts(raw []byte, paths ...string) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.UseNumber()
@@ -63,18 +62,14 @@ type countSite struct {
 // present as null is an error.
 //
 // The case-collision check runs at EVERY object on the path, before the absence check,
-// not only when the exact key is missing. It used to run only in the "absent" branch, on
-// the assumption that a case-colliding key only mattered when it was the SOLE way
-// encoding/json's later, case-insensitive Unmarshal could reach the field. That missed
-// the case where BOTH the canonical key and a re-cased duplicate are present in the same
+// not only when the exact key is missing. It also covers the
+// case where BOTH the canonical key and a re-cased duplicate are present in the same
 // object: the exact-name lookup finds and validates the canonical key, while
 // encoding/json.Unmarshal walks the raw object key-by-key and binds whichever of the two
 // keys appears LAST in the byte stream (attacker-controlled order, not spelling). So
-// {"index":1,"Index":999999} passed this check (validating the harmless "index":1) while
-// RunlogEntry.Index ended up 999999, silently defeating the keyless --min-runlog-index
-// self-consistency check the RUNLOG index guards (reproduced live: attest
-// --min-runlog-index 999 against exactly that RUNLOG line reported max-index=999999 and
-// exited 0). A key that case-collides with a normative field is ambiguous input to a
+// {"index":1,"Index":999999}, with an exact-name lookup alone, would validate the harmless "index":1 while
+// RunlogEntry.Index ends up 999999, silently defeating the keyless --min-runlog-index
+// self-consistency check the RUNLOG index guards. A key that case-collides with a normative field is ambiguous input to a
 // format whose field names are canonical, so it is refused regardless of whether the
 // canonical spelling is ALSO present.
 //
@@ -153,9 +148,8 @@ func caseCollidingKey(m map[string]any, want string) (string, bool) {
 // checkCanonicalCount enforces the SPEC 11.3 canonical numeric form. Each check below is
 // commented with whether it is the ONLY thing standing between an out-of-form value and
 // acceptance, or whether a later check in this same function would also catch the value
-// (redundant, defence in depth). This was established empirically: each guard was
-// disabled in isolation and every conformance vector re-run, so the claim below is
-// proven, not assumed.
+// (redundant, defence in depth). Each classification holds when each guard is
+// disabled in isolation and every conformance vector is re-run.
 func checkCanonicalCount(path string, v any) error {
 	num, ok := v.(json.Number)
 	if !ok {
