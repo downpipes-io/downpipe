@@ -10,19 +10,18 @@
 #         context deadline exceeded
 #
 # No failing input, no panic, no reproducer written under testdata/fuzz, nothing to re-run.
-# The SAME sha had already been graded green: workflow_dispatch run 31295175449 ran the same
-# target to 41.013s and passed, push run 31296351130 failed. Same tree, same job, opposite
-# outcomes, and a dispatch run green is not a push run green.
+# The same tree passes when the target runs to 41s and fails when the expiry hits first. Same tree,
+# same job, opposite outcomes.
 #
 # THE SIGNATURE IS NOT SPECIFIC TO A TARGET OR A PACKAGE, which is what rules out a defect in
-# the code under test. Three occurrences, two packages, three targets, one failure text:
+# the code under test. It appears in two packages, on three targets, with one failure text:
 #
-#     run 30900154660  FuzzRunlogKeyless  (40.07s)  context deadline exceeded
-#     run 30953694916  FuzzManifest       (41.03s)  context deadline exceeded
-#     run 31296351130  FuzzDirTargetKey   (40.64s)  context deadline exceeded
+#     FuzzRunlogKeyless  (40.07s)  context deadline exceeded
+#     FuzzManifest       (41.03s)  context deadline exceeded
+#     FuzzDirTargetKey   (40.64s)  context deadline exceeded
 #
-# Reproduced locally at 1 in 40 with `-fuzztime 3s -parallel 2` on an unmodified tree, with
-# `git status --porcelain` empty afterwards, so nothing was written to the corpus there either.
+# It reproduces locally at 1 in 40 with `-fuzztime 3s -parallel 2` on an unmodified tree, with
+# `git status --porcelain` empty afterwards, so nothing is written to the corpus there either.
 #
 # THE MECHANISM, read out of the Go source rather than guessed. internal/fuzz/fuzz.go's
 # CoordinateFuzzing wraps its context with WithTimeout(fuzztime) and derives
@@ -196,7 +195,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   : >"$st_dir/empty-a"
   : >"$st_dir/empty-b"
 
-  # The exact two lines from push run 31296351130, with the surrounding text `go test` prints.
+  # The two lines of a budget-expiry failure, with the surrounding text `go test` prints.
   printf -- 'fuzz: elapsed: 41s, execs: 536575 (7233/sec), new interesting: 126 (total: 163)\n--- FAIL: FuzzDirTargetKey (40.64s)\n    context deadline exceeded\nFAIL\nexit status 1\nFAIL\tgithub.com/downpipes-io/downpipe/internal/restore\t40.643s\n' >"$st_dir/race.log"
   assert_eq "deadline-race" "$(classify "$st_dir/race.log" "$st_dir/empty-a" "$st_dir/empty-b")" \
     "the CI failure text with an unchanged corpus is the budget-expiry race"

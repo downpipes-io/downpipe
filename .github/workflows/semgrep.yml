@@ -29,15 +29,12 @@ jobs:
     permissions:
       contents: read
       security-events: write # upload the SARIF to code scanning
-      # `actions: read` is required by upload-sarif on a PRIVATE repository, and its absence is what
-      # produced the exact annotation text this job used to carry every run, "Resource not accessible
-      # by integration", pointing at the get-a-workflow-run endpoint. That message was read here as
-      # proof that Advanced Security was missing; it was not, it was this permission. Measured against
-      # docs, whose trivy and semgrep jobs already carry `actions: read` and therefore reach the real
-      # answer, "Code Security must be enabled for this repository to use code scanning". Both roads
-      # end at the same place today, because code scanning is off either way, so this line changes
-      # nothing now. It is here so that the day the upload is meant to work it is not stopped by a
-      # permission nobody remembered.
+      # `actions: read` is required by upload-sarif on a PRIVATE repository. Without it the upload
+      # reports "Resource not accessible by integration" at the get-a-workflow-run endpoint, which reads
+      # as missing Advanced Security but is this permission. With it, the real answer is "Code Security
+      # must be enabled for this repository to use code scanning". Code scanning is off either way, so
+      # this line changes nothing today. It is here so that the day the upload is meant to work it is not
+      # stopped by a permission nobody remembered.
       actions: read
     steps:
       - name: Harden Runner
@@ -55,15 +52,13 @@ jobs:
       #
       # `GET /repos/downpipes/downpipe` reports `security_and_analysis.code_security.status` as
       # `disabled`, and so does every one of the ten repositories in the organisation, so the upload
-      # cannot succeed here and `continue-on-error` was keeping the job green over it.
+      # cannot succeed here, and `continue-on-error` would only hold the job green over it.
       #
-      # That was not a quiet arrangement, which is the part the note here had wrong. A step held green
-      # by `continue-on-error` STILL emits a failure-level annotation, so every successful Semgrep run
-      # on main carried one. Read from run 31250264012 on main at a5c56d5d, run conclusion success, job
-      # conclusion success, annotation level failure, via
-      # `GET /repos/downpipes/downpipe/check-runs/{job_id}/annotations`. It was measured separately that
-      # a step failing under `continue-on-error` annotates at failure level even with no error command
-      # of its own, and that a step held back by an `if:` annotates nothing at all. A green run that
+      # A step held green by `continue-on-error` STILL emits a failure-level annotation, so every
+      # successful Semgrep run on main would carry one (job conclusion success, annotation level failure,
+      # visible via `GET /repos/downpipes/downpipe/check-runs/{job_id}/annotations`). A step failing under
+      # `continue-on-error` annotates at failure level even with no error command of its own, and a step
+      # held back by an `if:` annotates nothing at all. A green run that
       # always shows a red annotation teaches a reader that annotations here mean nothing, which is the
       # same lesson a permanently red check teaches.
       #

@@ -3,8 +3,8 @@
 # part of CI (the CLI is a binary; releases are dispatch-only in release.yml).
 name: CI
 
-# paths-ignore is deliberately down to two entries. "**.md" and "docs/**" used to be here
-# and they were a gate you could switch off by choosing a file extension.
+# paths-ignore is deliberately down to two entries. "**.md" and "docs/**" are not listed,
+# because a listed pattern is a gate you could switch off by choosing a file extension.
 #
 # Measured, not argued. The conformance vectors carry the recovery bundle as archive BYTES,
 # at internal/format/testdata/vectors/*/archive/_RECOVERY/downpipe/0.1.0/FORMAT.md and
@@ -36,8 +36,8 @@ name: CI
 #
 # LICENSE* AND .GITIGNORE ARE NO LONGER IGNORED EITHER, for a reason the analysis above does not cover.
 # This workflow's CI Success check is required by protect-main with no bypass actor, admins included.
-# A pull request whose only changed file matched one of those two entries started no run, so the
-# required check never reported and GitHub refused to merge it: the reader argument above is about
+# A pull request whose only changed file matched one of those two entries would start no run, so the
+# required check would never report and GitHub would refuse to merge it: the reader argument above is about
 # whether a gate reads the file, and says nothing about whether the required check can run at all. The
 # cost is that a licence or ignore-file-only change now runs the full matrix; the alternative was that
 # such a change could never be merged by anyone.
@@ -355,14 +355,14 @@ jobs:
       # (internal/spec) fails when a Fuzz function is missing from this matrix or from
       # fuzz-extended.yml's.
       #
-      # NOT a bare `go test -fuzz` loop any more. `-fuzztime <duration>` expiry is the fuzzing
+      # NOT a bare `go test -fuzz` loop. `-fuzztime <duration>` expiry is the fuzzing
       # coordinator's normal termination path and it races its own context cancellation, so a clean
       # budget expiry surfaces as `--- FAIL: <target> (40.6s) / context deadline exceeded` with no
-      # crasher, no input and nothing to re-run. It did that three times in five days here, on three
-      # different targets across both packages, and the third one held main red for over an hour.
+      # crasher, no input and nothing to re-run. It can do that on any target in either package,
+      # and a failure like that holds main red.
       # scripts/fuzz-bounded.sh reads the corpus rather than the exit status to tell a finding from
       # an expiry: a crasher fails on the first attempt and is never re-run, a bare expiry is
-      # re-run once, and a repeat fails. Its header carries the run ids and the Go source lines.
+      # re-run once, and a repeat fails. Its header carries the Go source lines.
       - name: go test -fuzz (each target, bounded, expiry classified)
         env:
           PKG: ${{ matrix.pkg }}
@@ -387,7 +387,7 @@ jobs:
       # The pin check inside validate.mjs runs before a vector is read and decides, per lockfile key,
       # whether to compare it, set it aside or refuse. Its most consequential arm cannot be reached by
       # this repository's own lockfile: lockfileVersion 3 emits a versioned key per WORKSPACE MEMBER and
-      # there is no workspace here. That arm used to report such a key NOT INSTALLED at exit 1 with the
+      # there is no workspace here. That arm must not report such a key NOT INSTALLED at exit 1 with the
       # remedy `npm ci`, which cannot fix it. The self-test needs no install, so it runs BEFORE `npm ci`
       # and would still say so on a day the install itself is what is broken.
       #

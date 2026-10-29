@@ -3,9 +3,8 @@
 # it diffs the base ref against the head ref.
 #
 # ALSO SKIPPED WHILE THE REPOSITORY IS PRIVATE. The action needs the GitHub dependency graph, which this
-# private repository does not have, so on every pull request it failed before it read a single dependency.
-# Measured: run 30954127859 on pull request #10, a github-actions group bump, red on this check
-# for a reason that had nothing to do with its dependencies.
+# private repository does not have, so without the skip it would fail before it read a single dependency,
+# including on a github-actions group bump, for a reason that has nothing to do with its dependencies.
 #
 # A permanently red security check is worse than an absent one: it teaches the reader that red here means
 # nothing, which is the last lesson a security check should teach, and it makes a pull request that is red
