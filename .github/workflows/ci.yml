@@ -10,21 +10,14 @@ name: CI
 # at internal/format/testdata/vectors/*/archive/_RECOVERY/downpipe/0.1.0/FORMAT.md and
 # RECOVER.md, and those bytes are covered by a signed SHA384SUMS. Rewriting one line of one
 # such file in a scratch worktree turns `go test ./internal/format` from exit 0 to exit 1.
-# Under "**.md" that commit triggered NO CI run at all, because the signed bytes live in a
+# Under "**.md" that commit would trigger NO CI run at all, because the signed bytes live in a
 # file ending .md.
 #
-# That last claim was true of ONE vector when it was written, and why is worth keeping.
-# seg-single-chunk is FuzzReaderOpen's baseline, loaded with CheckRecoveryBundle set as a
-# positive control before fuzzing, so a tamper there did fail; the identical tamper under
-# gzip-codec, seg-multi-chunk or master-capsule left the whole suite at exit 0, twelve
-# tampers out of twelve at 6e152f5. The recovery-bundle-tampered vector does not close that
-# gap either: it asserts only that the open is refused, which any unverifiable bundle
-# satisfies. The claim holds for all 49 archive vectors from 9c2ce92, which runs every
-# committed bundle through VerifyBundle as a TestConformance subtest
-# (internal/format/conformance_bundle_test.go).
-# "docs/**" did the same for docs/format/schema.json, the normative machine-readable schema
+# The claim holds for all 49 archive vectors: every committed bundle runs through VerifyBundle as a
+# TestConformance subtest (internal/format/conformance_bundle_test.go).
+# "docs/**" would do the same for docs/format/schema.json, the normative machine-readable schema
 # every vector is validated against: breaking its formatVersion const makes
-# scripts/schema-validate/validate.mjs exit 1, and that commit ran nothing either.
+# scripts/schema-validate/validate.mjs exit 1, and that commit would run nothing either.
 #
 # Every markdown file in this repository is read by a test, checked by a gate, or is archive
 # bytes inside the corpus, so none of it is prose CI can afford to skip. docs/format/SPEC.md
@@ -34,12 +27,12 @@ name: CI
 # a typo fix runs the full matrix; the alternative is that the specification and the corpus
 # are the only artefacts here nothing checks.
 #
-# LICENSE* AND .GITIGNORE ARE NO LONGER IGNORED EITHER, for a reason the analysis above does not cover.
+# LICENSE* AND .GITIGNORE ARE NOT IGNORED EITHER, for a reason the analysis above does not cover.
 # This workflow's CI Success check is required by protect-main with no bypass actor, admins included.
 # A pull request whose only changed file matched one of those two entries would start no run, so the
 # required check would never report and GitHub would refuse to merge it: the reader argument above is about
 # whether a gate reads the file, and says nothing about whether the required check can run at all. The
-# cost is that a licence or ignore-file-only change now runs the full matrix; the alternative was that
+# cost is that a licence or ignore-file-only change runs the full matrix; the alternative is that
 # such a change could never be merged by anyone.
 on:
   push:
@@ -56,8 +49,8 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: "1.26.10" # 1.26.4 was NOT patched against GO-2026-5856 (crypto/tls ECH privacy leak)
-  # and 1.26.5 was NOT patched against GO-2026-6218/6090/6088/5972/5026 (net/url, crypto/tls,
+  GO_VERSION: "1.26.10" # 1.26.4 is NOT patched against GO-2026-5856 (crypto/tls ECH privacy leak)
+  # and 1.26.5 is NOT patched against GO-2026-6218/6090/6088/5972/5026 (net/url, crypto/tls,
   # encoding/xml, encoding/asn1, net/http), and 1.26.8 is NOT patched against GO-2026-6603, -6604, -6605,
   # -6607, -6608, -6610, -6611, -6612, -6613 and -6617 (net/http, crypto/tls, net/textproto, os), which govulncheck reports as AFFECTING
   # this code, so the gating govulncheck job fails on any of them
@@ -155,8 +148,8 @@ jobs:
       - name: go test coverage (race, cross-package)
         run: go test -race -shuffle=on -coverpkg=./... -coverprofile=coverage.out ./...
       # The gate's own gate. It proves the script FAILS AND SAYS SO on a below-floor
-      # profile, which is the property that was broken: the job exited 1 correctly and
-      # printed no verdict, because a bare `awk` under `set -e` terminated the script before
+      # profile, which is the property at stake: a gate that exits 1 correctly but
+      # prints no verdict, because a bare `awk` under `set -e` terminates the script before
       # the summary line below it. An exit-code assertion cannot see that, so --self-test
       # asserts on the output and pairs each assertion with a passing-profile control.
       - name: coverage gate self-test
@@ -165,10 +158,9 @@ jobs:
       - name: coverage gate
         # `shell: bash` is load-bearing here and not decoration. Without it a `run` step uses the
         # DEFAULT shell, which GitHub documents as `bash -e {0}`: -e but NO pipefail. A pipeline's
-        # status is its LAST command's, so `coverage-gate.sh | tee` exited with tee's status and this
-        # step could not fail however far below its floor a package fell. The gate happens to pass
-        # today, which is exactly when to close this: it was one regression away from a package
-        # dropping under 85% with a green tick over it.
+        # status is its LAST command's, so `coverage-gate.sh | tee` would exit with tee's status and this
+        # step could not fail however far below its floor a package fell, so a package could drop
+        # under 85% with a green tick over it.
         #
         # Naming the shell is what switches it to `bash --noprofile --norc -eo pipefail {0}`, so the
         # gate's own exit code reaches the job. The pipe is kept because coverage.txt is uploaded as
@@ -198,10 +190,9 @@ jobs:
       # runner image ships a node new enough for it, and the script imports nothing outside node: builtins.
       # `!cancelled()` so a pin failure and a later failure are reported in one run rather than one per push.
       #
-      # This repository is why the gate exists. release.yml pinned the signer to a sha commented v3.7.0
-      # that is really v3.8.1, and the tidy-looking repair, moving the sha down to the tag the comment
-      # named, would have downgraded the signing step. The gate's own check for that is that its failure
-      # message names the safe direction, and its self-test asserts the message says so.
+      # A pin comment that names a lower version than its sha is repaired by correcting the comment, never
+      # by moving the sha down to the tag the comment names, which would downgrade the step. The gate's
+      # failure message names that safe direction, and its self-test asserts the message says so.
       - name: Action-pin comments agree with the shas they annotate
         if: ${{ !cancelled() }}
         env:
@@ -212,9 +203,9 @@ jobs:
       # no token, no network, and the runner image ships a node new enough for it. `!cancelled()` so a
       # pin and an enrolment failure are both reported in one run rather than one per push.
       #
-      # This repository is why the gate had to be written rather than copied. It has no package.json, so
-      # the derivation the sibling repos use would have found nothing here and passed; the channel is the
-      # Makefile, and four of the six entry points are bash, which needed a shell guard of their own.
+      # This repository has no package.json, so the derivation the sibling repos use would find nothing
+      # here and pass; the channel is the Makefile, and four of the six entry points are bash, which needs
+      # a shell guard of its own.
       - name: Script entry points enrolled in the completion guard
         if: ${{ !cancelled() }}
         run: make lint-verdict-guard
@@ -225,22 +216,21 @@ jobs:
         # prebuilt action binary is built with go1.24 and refuses a go1.26 target. GOLANGCI_LINT_VERSION
         # is what pins it, and the script prints the invocation it resolved to.
         #
-        # Two examined-nothing states were put to it. Over no packages it exits 1 (status 5, "no go files
+        # Two examined-nothing states matter here. Over no packages it exits 1 (status 5, "no go files
         # to analyze"), so an empty checkout cannot read as a pass. The state that DOES turn it green is a
         # configuration one: `linters.exclusions.paths: [".*"]` in .golangci.yml takes a fixture from two
-        # errcheck findings to "0 issues." and exit 0, reproduced red to green.
+        # errcheck findings to "0 issues." and exit 0.
         #
         # IT IS ANNOUNCED RATHER THAN FORBIDDEN. A rule strict enough to catch `.*` would also forbid a
         # legitimately narrow exclusion, and this repository has one (misspell's ignore-rules for the
-        # product name "artifact"). Leaving it to the diff was rejected as well: a reviewer sees a diff
+        # product name "artifact"). Leaving it to the diff is no substitute: a reviewer sees a diff
         # once, and a log line is seen on every run. The script prints what the linter actually excluded
         # and how many Go files it walked, so an exclusion of any width names itself in the log. An
         # exclusion that is legitimate loses nothing by being named.
         #
-        # The measurement that widened it: with NO exclusions block in .golangci.yml, this repository's
-        # verbose run already showed "nolint_filter: 1/0", one real issue suppressed by a //nolint comment
-        # in a test file and invisible in every CI log until now. Announcing only the configuration would
-        # have missed the suppression the repository actually has.
+        # The announcement covers suppressions as well as configuration: with NO exclusions block in
+        # .golangci.yml, this repository's verbose run shows "nolint_filter: 1/0", one real issue suppressed
+        # by a //nolint comment in a test file. Announcing only the configuration would miss that suppression.
         run: ./scripts/lint-announce.sh
       # The announcement's own gate, in the same shape as the coverage gate's: it drives the whole script
       # with a stub linter over recorded verbose output, so an announcement that stopped announcing is
@@ -277,15 +267,10 @@ jobs:
           go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
           "$(go env GOPATH)/bin/govulncheck" ./...
       # THE npm TREE THIS REPOSITORY ALSO HAS, and which govulncheck cannot see. scripts/schema-validate
-      # is a real npm project with its own lockfile, and at first nothing in this repository
-      # audited it: it carried four advisories, three of them HIGH, and all four were in the PRODUCTION
-      # tree, since ajv is its only dependency. They were closed by pinning ajv to 8.20.0 and letting the
-      # lockfile take fast-uri 3.1.5, which the declared range already allowed.
-      # Later, fast-uri 3.1.5 itself turned out to carry four HIGH advisories (GHSA-5jgf-p345-68v8,
-      # GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp; all fixed at 3.1.6), unmasked once
-      # the govulncheck step above stopped failing first and this step finally ran again. Closed by
-      # `npm update fast-uri` inside the declared ajv ^3.0.1 range (now locked at 3.1.8, which also closes GHSA-hrr3-gc8f-f4qj); package.json
-      # is untouched, since the code never imports fast-uri directly.
+      # is a real npm project with its own lockfile, and its PRODUCTION tree is graded here, since ajv is
+      # its only dependency. fast-uri comes in through the declared ajv ^3.0.1 range and is locked at
+      # 3.1.8, which closes GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp
+      # and GHSA-hrr3-gc8f-f4qj; the code never imports fast-uri directly.
       #
       # NO ACKNOWLEDGEMENT PATH AND NO GATE FILE HERE, deliberately, and the divergence from other
       # repositories in this product's codebase is stated rather than left to be noticed. Those
@@ -316,14 +301,14 @@ jobs:
       matrix:
         include:
           # FuzzVerifyReport adds one 40s target to this row on every push. A local run of
-          # its fuzz step alone, build included, took 61s.
+          # its fuzz step alone, build included, takes 61s.
           - pkg: ./internal/format
             targets: FuzzCanonJSON FuzzCanonNum FuzzManifest FuzzShard FuzzReaderOpen FuzzRunlogKeyless FuzzRunlogChainAnomaly FuzzVerifyReport
           - pkg: ./internal/restore
             targets: FuzzD1Transcode FuzzDirTargetKey
           # Cost of this row on every push: it has the same shape as the restore row (2 targets
-          # at 40s), which took 2m21s to 2m26s over the 3 green CI runs of 13 and 17 Sep. So it
-          # adds 3 billed minutes per push. A local run of its fuzz step took 84s.
+          # at 40s), which takes 2m21s to 2m26s. So it
+          # adds 3 billed minutes per push. A local run of its fuzz step takes 84s.
           - pkg: ./internal/crypto
             targets: FuzzStreamRoundTrip FuzzStreamMalformed
     steps:
@@ -393,12 +378,10 @@ jobs:
       #
       # WHY THIS JOB IS THE ONE THAT CARRIES THE PIN. Everything the step below asserts about the frozen
       # downpipe/0.1.0 conformance vectors is asserted BY ajv, so a run that did not compare ajv graded
-      # the format under a validator this repository did not pin, on a green run. At first a
-      # lockfile entry the classifier could not read left through a guard clause upstream of every
-      # bucket, so deleting one field from the ajv entry, or replacing it with npm's own
-      # `{ resolved, link: true }` shape, exited 0 with a pass line that named no discrepancy at all.
-      # The classifier now refuses at exit 2 on an entry it cannot read, and refuses unless ajv itself
-      # was among the packages compared, by name.
+      # the format under a validator this repository did not pin, on a green run. The classifier
+      # refuses at exit 2 on a lockfile entry it cannot read (a deleted field in the ajv entry, or npm's own
+      # `{ resolved, link: true }` shape), and refuses unless ajv itself was among the packages compared,
+      # by name.
       - name: lockfile classifier self-test
         working-directory: scripts/schema-validate
         run: node validate.mjs --self-test
@@ -428,9 +411,8 @@ jobs:
       # vector that is missing on disk, and no on-disk vector is undocumented.
       - name: check enumerated vector names equal the directory listing
         run: ./scripts/check-vectors-listing.sh
-      # The extractor's own gate. SPEC.md uses the "- `name`:" list form outside section 14 too, and
-      # when section 12.3 did, the step above read five descriptor members as vectors and main went
-      # red. The self-test drives the script over a fixture with such a list, and over a section 14
+      # The extractor's own gate. SPEC.md uses the "- `name`:" list form outside section 14 too, so
+      # an extractor that read those lists would take descriptor members for vectors. The self-test drives the script over a fixture with such a list, and over a section 14
       # that misses or adds a vector, so an extractor that reads too much or too little fails here.
       - name: vectors listing self-test
         if: ${{ !cancelled() }}
@@ -475,8 +457,7 @@ jobs:
       - name: Check required jobs
         # Generic by construction: reads the job's own `needs:` context at run time (toJSON(needs)),
         # so it cannot drift out of sync with that list the way a hand-written require_success call
-        # per job name can. One shared aggregation step replaced a bespoke,
-        # per-repository aggregation script.
+        # per job name can.
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |

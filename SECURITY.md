@@ -133,10 +133,7 @@ push and pull request against `main` (`.github/workflows/ci.yml`):
    the Go race detector, catching concurrency bugs that could affect archive
    integrity.
 
-3. **Dependabot** (`.github/dependabot.yml`) opens weekly pull requests for both
-   `gomod` packages and GitHub Actions pins.
-
-4. **Pinned, hardened workflows.** The `step-security/harden-runner` action is
+3. **Pinned, hardened workflows.** The `step-security/harden-runner` action is
    pinned to a full commit SHA in every workflow job that checks out the
    repository, and `actions/checkout` is run with `persist-credentials: false`.
 
@@ -163,8 +160,6 @@ GO-2026-6607, GO-2026-6608, GO-2026-6610, GO-2026-6611, GO-2026-6612, GO-2026-66
   with `main`. It also blocks force pushes to `main` and deletion of `main`. The
   finding must be resolved (module upgrade, patch, or justified override with a
   risk-acceptance comment) before the pull request can merge.
-- Dependabot PRs for security advisories are reviewed and merged within the
-  applicable SLA window. Non-security version bumps are reviewed weekly.
 
 ### Crypto dependencies
 

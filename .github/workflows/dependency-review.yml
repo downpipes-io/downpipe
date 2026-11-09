@@ -2,9 +2,8 @@
 # a known high-or-worse advisory, or a disallowed licence. Runs only on PRs because
 # it diffs the base ref against the head ref.
 #
-# ALSO SKIPPED WHILE THE REPOSITORY IS PRIVATE. The action needs the GitHub dependency graph, which this
-# private repository does not have, so without the skip it would fail before it read a single dependency,
-# including on a github-actions group bump, for a reason that has nothing to do with its dependencies.
+# ALSO SKIPPED WHILE THE REPOSITORY IS PRIVATE. The action needs the GitHub dependency graph, which a
+# private repository does not have, so without the skip it would fail before it read a single dependency.
 #
 # A permanently red security check is worse than an absent one: it teaches the reader that red here means
 # nothing, which is the last lesson a security check should teach, and it makes a pull request that is red
@@ -13,13 +12,11 @@
 # THIS IS A SKIP, NOT A SILENCING, and the two are not the same thing. The `report` job below runs on
 # every pull request with no condition and states plainly that the review did not run and why, so the
 # outcome is a genuine no-result rather than a pass. Nothing about the review's own settings is loosened:
-# fail-on-severity and the licence denial list are untouched, and the day the repository is made public
-# the job starts running again by itself, unchanged, because the dependency graph is on by default for
-# public repositories. Nobody has to remember to remove this. Enabling the dependency graph on the private
-# repository is the other route, and that is an owner setting rather than a default.
+# fail-on-severity and the licence denial list are untouched, and on a public repository
+# the job runs, because the dependency graph is on by default for public repositories.
 #
-# `engine` and the docs site carry the same guard, written the same way, and this is
-# copied from them so the repositories cannot drift into different answers to one question.
+# `engine` and the docs site carry the same guard, written the same way, so the
+# repositories cannot drift into different answers to one question.
 #
 # Written as `== false` rather than `!`: on a non-pull_request event github.event.repository can be
 # absent, and `== false` on a null skips, where `!null` would run.
@@ -57,8 +54,8 @@ jobs:
 
   # THE SKIP MUST NOT READ AS A PASS, which is the whole reason the job above may skip at all.
   #
-  # A job result takes one of FOUR values: success, failure, cancelled, skipped. Before this job existed
-  # the workflow had exactly one job, so a skip of it would leave the "Dependency Review" check grey, and
+  # A job result takes one of FOUR values: success, failure, cancelled, skipped. A skip of the review job
+  # alone would leave the "Dependency Review" check grey, and
   # a required-check configuration counts a skipped check as satisfied. Turning a permanent red into a
   # silent grey is not the fix; it is the same defect wearing the other colour.
   #
@@ -100,7 +97,7 @@ jobs:
                   {
                     echo "### Dependency review did not run on this pull request"
                     echo ""
-                    echo "The action needs the GitHub dependency graph, which this private repository does not have. Nothing was reviewed, so this check asserts nothing about the dependencies in this pull request. It starts running by itself the day the repository is made public."
+                    echo "The action needs the GitHub dependency graph, which this private repository does not have. Nothing was reviewed, so this check asserts nothing about the dependencies in this pull request."
                     echo ""
                     echo "The Go module scanners are unaffected: ci.yml still runs govulncheck on this same pull request, and the gitleaks secret scan runs in its own workflow."
                   } >> "$GITHUB_STEP_SUMMARY"
