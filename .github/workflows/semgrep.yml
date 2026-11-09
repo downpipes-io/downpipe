@@ -32,9 +32,8 @@ jobs:
       # `actions: read` is required by upload-sarif on a PRIVATE repository. Without it the upload
       # reports "Resource not accessible by integration" at the get-a-workflow-run endpoint, which reads
       # as missing Advanced Security but is this permission. With it, the real answer is "Code Security
-      # must be enabled for this repository to use code scanning". Code scanning is off either way, so
-      # this line changes nothing today. It is here so that the day the upload is meant to work it is not
-      # stopped by a permission nobody remembered.
+      # must be enabled for this repository to use code scanning". It is here so that an upload that is
+      # meant to work is not stopped by a permission nobody remembered.
       actions: read
     steps:
       - name: Harden Runner
@@ -50,9 +49,9 @@ jobs:
           semgrep scan --config p/default --config p/secrets --metrics off --sarif --output semgrep.sarif || true
       # WHY THIS UPLOAD IS SKIPPED RATHER THAN ALLOWED TO FAIL.
       #
-      # `GET /repos/downpipes/downpipe` reports `security_and_analysis.code_security.status` as
-      # `disabled`, and so does every one of the ten repositories in the organisation, so the upload
-      # cannot succeed here, and `continue-on-error` would only hold the job green over it.
+      # Code scanning ingest needs GitHub Advanced Security, which a private repository does not have unless
+      # the owner enables it, so on a private repository the upload cannot succeed, and
+      # `continue-on-error` would only hold the job green over it.
       #
       # A step held green by `continue-on-error` STILL emits a failure-level annotation, so every
       # successful Semgrep run on main would carry one (job conclusion success, annotation level failure,
@@ -63,15 +62,14 @@ jobs:
       # same lesson a permanently red check teaches.
       #
       # The precondition is the repository's own visibility, so it is written as the visibility test
-      # that decides it, which is the construct `scorecard.yml` already uses to guard its own
-      # upload-sarif and `dependency-review.yml` uses to guard itself. Advanced Security is included
-      # once a repository is public, so this starts running again by itself the day that changes, with
-      # nothing to edit here. Enabling Advanced Security on the private repository is the other route,
-      # and that is an owner setting rather than a default; taking it would mean widening this
-      # condition.
+      # that decides it, which is the construct `scorecard.yml` uses to guard its own
+      # upload-sarif and `dependency-review.yml` uses to guard itself. Advanced Security is included on a
+      # public repository, so this runs there, with nothing to edit here. Enabling Advanced Security on a
+      # private repository is the other route, and that is an owner setting rather than a default; taking
+      # it would mean widening this condition.
       #
-      # `continue-on-error` goes with the same edit, and that half is what keeps this honest rather
-      # than merely quiet. A skipped step reports nothing, so the only runs on which this step can now
+      # `continue-on-error` is absent, and that is what keeps this honest rather
+      # than merely quiet. A skipped step reports nothing, so the only runs on which this step can
       # fail are runs where it was expected to work, and on those the job goes red and says so.
       #
       # Written as `== false` rather than `!`: on an event whose payload carries no repository object
@@ -83,9 +81,8 @@ jobs:
           sarif_file: semgrep.sarif
           category: semgrep
 
-      # The skip must not be silent. Perversely, the failure-level annotation was until now the only
-      # thing in a run that said the Security tab had received nothing, so removing it without putting
-      # something in its place would leave a reader with no way to tell an empty Security tab from a
+      # The skip must not be silent. Without a failure-level annotation, nothing in a run says the
+      # Security tab received nothing, so a reader could not tell an empty Security tab from a
       # clean one. This says which of the two happened, at notice level, in the log and the summary.
       #
       # It also names where the findings ARE, which matters more here than in the sibling repositories:

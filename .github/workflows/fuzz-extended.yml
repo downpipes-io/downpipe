@@ -1,6 +1,6 @@
 # Extended fuzzing: a weekly long-budget run of every fuzz target. The bounded 40s-per-target
 # pass in ci.yml gates every push; this job spends a much larger budget searching for crashers
-# the short pass cannot reach (FuzzReaderOpen was still finding new coverage at its CI cutoff).
+# the short pass cannot reach.
 # It is deliberately NOT part of the CI Success sentinel: a failure here is a found bug to
 # triage, not a blocked merge. A surfaced crasher should be committed as a seed under
 # testdata/fuzz so the short CI pass pins it from then on.

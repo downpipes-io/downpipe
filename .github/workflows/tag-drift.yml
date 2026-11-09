@@ -3,10 +3,8 @@
 # .../downpipe@latest` resolves to the newest TAG, not to main, so a command added to
 # main and never tagged is silently missing from every install-by-module-path.
 #
-# History: the v0.1.1 tag was the only tag in this repository for four
-# weeks while main moved 51 commits ahead of it and gained `prune`, `recombine` and
-# `unseal-export`. Nothing here ran, so nothing caught it; v0.2.0 closed the gap by
-# hand. This workflow exists so the next gap is caught by CI, not by a manual audit.
+# This workflow exists so a gap between the newest tag and main is caught by CI, not by a manual
+# audit.
 name: Tag drift
 
 on:
